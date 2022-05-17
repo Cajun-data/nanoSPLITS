@@ -6,3 +6,5 @@ Single-cell multiomics can provide comprehensive insights into gene regulatory n
 
 ![alt text](https://github.com/Cajun-data/nanoSPLITS/blob/main/Scheme1_Edited2_cropped.png)
 
+## Files Provided
+An image of every cell sorted by the cellenONE for nanoSPLITS analysis is included [here](https://github.com/Cajun-data/nanoSPLITS/tree/main/Cell_Sorting_Images). RNAseq metadata and a key for translating the various images and file names can be found [here](https://github.com/Cajun-data/nanoSPLITS/tree/main/Metadata). The RMarkdown files for each figure/experiment are provided, as well as pre-rendered HTML files [here](https://github.com/Cajun-data/nanoSPLITS/blob/main/Pooled_C10Cells/C10pooledcells_Figure2.html).
