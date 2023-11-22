@@ -1,0 +1,154 @@
+<?xml version='1.0' standalone='yes' ?>
+<LVData xmlns="http://www.ni.com/LVData">
+<Version>18.0f2</Version>
+<String>
+<Name></Name>
+<Val>Experimental setup: 
+
+Ejection boundary:  301.00	Sedimentation boundary:  225.00	Pixel size [µm]: 0.69
+Operation mode: 	Fluorescence + Transmission
+Channels:  Blue	Green	Orange	Red
+Voltage [%]:  100	100
+
+Detection: 
+Diameter Min: 20	Diameter Max: 75	Circularity: Max 3.00	Elongation: Max 3.800000	
+
+Transmission setup: 
+Isolation: 
+Diameter Min: 25	Diameter Max: 45	Threshold: 20	Circularity: Max 3.00	Elongation: Max 2.00	
+</Val>
+</String>
+
+<Array>
+<Name></Name>
+<Dimsize>2</Dimsize>
+<Cluster>
+<Name></Name>
+<NumElts>5</NumElts>
+<String>
+<Name>ChName</Name>
+<Val>Green</Val>
+</String>
+<Array>
+<Name>FluSelArray</Name>
+<Dimsize>1</Dimsize>
+<Cluster>
+<Name>FluSelection</Name>
+<NumElts>5</NumElts>
+<I32>
+<Name>Measurement Parameter</Name>
+<Val>33</Val>
+</I32>
+<DBL>
+<Name>Range Lower Value</Name>
+<Val>36.23188405797102</Val>
+</DBL>
+<DBL>
+<Name>Range Upper Value</Name>
+<Val>144.92753623188406</Val>
+</DBL>
+<Boolean>
+<Name>Range</Name>
+<Val>1</Val>
+</Boolean>
+<Boolean>
+<Name>Measurement Type</Name>
+<Val>0</Val>
+</Boolean>
+</Cluster>
+</Array>
+<Boolean>
+<Name>NegX</Name>
+<Val>0</Val>
+</Boolean>
+<Cluster>
+<Name>FluGreyThresh</Name>
+<NumElts>2</NumElts>
+<SGL>
+<Name>Lower grey value</Name>
+<Val>60.00000</Val>
+</SGL>
+<SGL>
+<Name>UpperGrey</Name>
+<Val>255.00000</Val>
+</SGL>
+</Cluster>
+<Array>
+<Name></Name>
+<Dimsize>2</Dimsize>
+<U8>
+<Name>FluInts</Name>
+<Val>60</Val>
+</U8>
+<U8>
+<Name>FluInts</Name>
+<Val>255</Val>
+</U8>
+</Array>
+</Cluster>
+<Cluster>
+<Name></Name>
+<NumElts>5</NumElts>
+<String>
+<Name>ChName</Name>
+<Val>Orange</Val>
+</String>
+<Array>
+<Name>FluSelArray</Name>
+<Dimsize>1</Dimsize>
+<Cluster>
+<Name>FluSelection</Name>
+<NumElts>5</NumElts>
+<I32>
+<Name>Measurement Parameter</Name>
+<Val>33</Val>
+</I32>
+<DBL>
+<Name>Range Lower Value</Name>
+<Val>21.73913043478261</Val>
+</DBL>
+<DBL>
+<Name>Range Upper Value</Name>
+<Val>144.92753623188406</Val>
+</DBL>
+<Boolean>
+<Name>Range</Name>
+<Val>1</Val>
+</Boolean>
+<Boolean>
+<Name>Measurement Type</Name>
+<Val>0</Val>
+</Boolean>
+</Cluster>
+</Array>
+<Boolean>
+<Name>NegX</Name>
+<Val>1</Val>
+</Boolean>
+<Cluster>
+<Name>FluGreyThresh</Name>
+<NumElts>2</NumElts>
+<SGL>
+<Name>Lower grey value</Name>
+<Val>10.00000</Val>
+</SGL>
+<SGL>
+<Name>UpperGrey</Name>
+<Val>255.00000</Val>
+</SGL>
+</Cluster>
+<Array>
+<Name></Name>
+<Dimsize>2</Dimsize>
+<U8>
+<Name>FluInts</Name>
+<Val>10</Val>
+</U8>
+<U8>
+<Name>FluInts</Name>
+<Val>255</Val>
+</U8>
+</Array>
+</Cluster>
+</Array>
+</LVData>
