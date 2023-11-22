@@ -377,23 +377,17 @@ protein intensity values output from FragPipe (17.1). “rIBAQ.RData”
 contains iBAQ summarized (under variable “response”) protein values
 which are converted to riBAQ values within this script. iBAQ
 measurements were calculated using peptide level quant data from
-FragPipe outside of this script with the aLFQ R package. Summarized
-protein intensities are used for the proteomics data in Figure 3c, 3d,
-and 3e (and associated supplementary figures). Figure 3a and
-Supplementary Figure 5/6 utilized riBAQ values. Several accessory files
-are needed for reference within the script (“filter.RData”,
-“protlist.csv”, and “convert_uniprot.tsv”).</p>
+FragPipe outside of this script with the aLFQ R package. Several
+accessory files are needed for reference within the script
+(“filter.RData”, “protlist.csv”, and “convert_uniprot.tsv”).</p>
 </div>
 <div id="data-quality-control" class="section level2">
 <h2>Data Quality Control</h2>
 <p>For quality control of proteomics data, samples with less than 1,000
-identified proteins were removed from downstream analysis (Supplementary
-Figure 2). Furthermore, to reduce the influence of keratin on downstream
-dimensional reduction analyses, samples with median keratin
-log2(intensities) greater than 20 were removed. To accomplish
+identified proteins were removed from downstream analysis. To accomplish
 dimensional reduction of proteomics data, values were imputed using
-DreamAI. For Figure 3c, only proteins with less than 40% missingness in
-both SVEC and C10 were imputed and retained. For Figure 3d, only
+DreamAI. For Figure 3d, only proteins with less than 40% missingness in
+both SVEC and C10 were imputed and retained. For Figure 3e, only
 proteins in C10 with less than 40% missingness were imputed and
 retained.</p>
 </div>
@@ -408,8 +402,7 @@ expression values of the transcriptomic data, respectively. This
 experiment relies more heavily on raw counts, which are utilized in
 SCNorm in order to perform between-sample normalization. Normalized
 expression counts were read into the markdown file with
-“C10SVEC_singlecells_norm_counts.csv”. TPM normalized values are used in
-Figure 3a, Supplementary Figure 5, and Supplementary Figure 6.</p>
+“C10SVEC_singlecells_norm_counts.csv”.</p>
 </div>
 <div id="data-quality-control-1" class="section level2">
 <h2>Data Quality Control</h2>
