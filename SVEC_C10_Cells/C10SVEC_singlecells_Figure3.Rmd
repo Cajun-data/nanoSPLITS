@@ -1,8 +1,8 @@
 ---
 title: "nanoSPLITS C10/SVEC Single Cell Experiment - R Markdown File (Figure 3 and associated supplementary figures)"
 author: "James M. Fulcher"
-date: "Last updated: 05/17/2022"
-output:
+date: "Last updated: 11/21/2023"
+output:github_document:
   BiocStyle::html_document:
     toc_float: true
     code_folding: hide
@@ -29,7 +29,7 @@ Summarized protein intensities are used for the proteomics data in Figure 3c,
 For quality control of proteomics data, samples with less than 1,000 identified proteins were removed from downstream 
 analysis (Supplementary Figure 2). Furthermore, to reduce the influence of keratin
 on downstream dimensional reduction analyses, samples with median keratin log2(intensities)
-greater than 20 were removed. To accomplish dimensional reduction of proteomics data, values were imputed using DreamAI. For Figure 3c,  only proteins with less than 33% missingness in both SVEC and C10 were imputed and retained.  For Figure 3d, only proteins in C10 with less than 33% missingness were imputed and retained. 
+greater than 20 were removed. To accomplish dimensional reduction of proteomics data, values were imputed using DreamAI. For Figure 3c,  only proteins with less than 40% missingness in both SVEC and C10 were imputed and retained.  For Figure 3d, only proteins in C10 with less than 40% missingness were imputed and retained. 
 
 # Transcriptomics
 
@@ -56,11 +56,6 @@ library(fs);library(SC3); library(SingleCellExperiment);library(scater);
 library(Seurat); library(SeuratData); library(cowplot);library(data.table);
 library(viridis)
 
-#library(lessR)
-#library(extrafont)
-#loadfonts(device = "win")
-
-
 singcell <- read_tsv("C10SVEC_singlecells_Protein_intensities.tsv", show_col_types = FALSE)
 RNAx <- read.delim("C10SVEC_singlecells_Counts.txt", check.names = FALSE )
 RNA_norm3 <- read.csv("C10SVEC_singlecells_norm_counts.csv", check.names = FALSE)
@@ -83,7 +78,6 @@ g2m.genes <- read.csv("g2mgenes.csv", header = FALSE)$V1
 
 
 
-## Supplementary Figure X code, QC steps (QC Supplementary Figure)
 ```{r, message = FALSE, warning = FALSE,results = 'hide'}
 
 
@@ -104,37 +98,6 @@ RNAx2 <- RNAx %>%
   filter(Counts > 4)
 
 
-supp1 <- RNAx2 %>%
-    mutate(Type = case_when(grepl("05J", SampleID) ~ "C10",
-                            grepl("07J", SampleID) ~ "SVEC")) %>%
-  group_by(SampleID) %>%
-  add_count(name = "n") %>%
-  ungroup() %>%
-  distinct(SampleID,Type,n) %>%
-  ggplot()+
-  aes(x = Type, y = n, color = Type)+
-  geom_jitter(position = position_jitter(w = 0.1, h = 0), size = 3)+
-    theme_bw(base_size = 22) +
-  theme(legend.position = "none",
-    panel.background = element_rect(fill= 'white'),
-        axis.text.y=element_text(color = 'black', size = 22),
-        axis.text.x=element_text(angle = 0, vjust = 0.5, hjust= 0.5, color='black',size = 22),
-        panel.grid.minor = element_blank(),
-        panel.grid.major = element_blank(),
-        panel.border = element_blank(),
-        axis.line = element_line(),
-        text=element_text(family="Helvetica")) +
-  ylab("Genes Identified (n)")+
-    scale_color_manual(values = c("#88419d", "#8c96c6"))+
-  xlab("Cell Type")+
-  geom_segment(aes(x=0.5,xend=1.5),y=3000,yend=3000,
-               linetype='dotted', col = 'red', size = 1)+
-    geom_segment(aes(x=2.5,xend=1.5),y=2000,yend=2000,
-               linetype='dotted', col = 'red', size = 1)+
-  annotate("text", x = 1.5, y = 2000, label = "QC Cutoff", vjust = -1)
-
-
-
 RNAx3 <- RNAx2 %>%
     mutate(Type = case_when(grepl("05J", SampleID) ~ "C10",
                             grepl("07J", SampleID) ~ "SVEC")) %>%
@@ -151,60 +114,6 @@ RNAx3 <- RNAx2 %>%
 ```
 
 
-
-
-<!-- ```{r, echo = FALSE, message=FALSE, warning=FALSE, results='hide'} -->
-<!-- ###Normalization -->
-<!-- library(SCnorm) -->
-<!-- library(SingleCellExperiment) -->
-
-
-<!-- RNA_norm <- RNAx3 %>% -->
-<!--   pivot_wider(id_cols = "Gene", names_from = "SampleID", values_from = "Counts", -->
-<!--               values_fill = 0) %>% -->
-<!--     remove_rownames %>% column_to_rownames(var= "Gene" ) -->
-
-<!-- type <- RNAx3 %>% -->
-<!--   dplyr::select(SampleID) %>% -->
-<!--   distinct(SampleID) %>% -->
-<!--   mutate(cell_type1 = case_when(grepl("05J", SampleID) ~ "C10", -->
-<!--                                 grepl("07J", SampleID) ~ "SVEC")) %>% -->
-<!--   remove_rownames() %>% -->
-<!--   column_to_rownames(var="SampleID") -->
-
-<!-- type$cell_type1 <- as.factor(type$cell_type1) -->
-
-<!-- sce <- SingleCellExperiment( -->
-<!--   assays = list( -->
-<!--     counts = as.matrix(RNA_norm), -->
-<!--     logcounts = log2(as.matrix(RNA_norm) + 1) -->
-<!--   ), -->
-<!--   colData = type -->
-<!-- ) -->
-<!-- type2 <- as.character(type$cell_type1) -->
-
-<!-- countDeptEst <- plotCountDepth(Data = sce, Conditions = type2,FilterCellProportion = .1, NCores=3) -->
-
-<!-- sce = SingleCellExperiment::counts(sce) -->
-
-
-<!-- par(mfrow=c(2,2)) -->
-<!-- DataNorm <- SCnorm(Data = sce, -->
-<!--                    Conditions = type2, -->
-<!--                    PrintProgressPlots = TRUE, -->
-<!--                    FilterCellNum = 10, -->
-<!--                    NCores=3, -->
-<!--                    useZerosToScale=TRUE) -->
-
-
-<!-- ScaleFactors <- results(DataNorm, type="ScaleFactors") -->
-<!-- str(ScaleFactors) -->
-
-<!-- NormalizedData <- SingleCellExperiment::normcounts(DataNorm) -->
-
-<!-- write.csv(NormalizedData, "NormCounts_C10_svec.csv") -->
-
-<!-- ``` -->
 
 
 ## Post-normalization of scRNAseq data with SCNorm
@@ -296,73 +205,9 @@ singcell_long3 <- singcell_long2 %>%
 
 
 
-## Supplementary Figure X code (QC cutoff proteins)
-```{r,message = FALSE, warning = FALSE,results = 'hide'}
-labels <- singcell_long3 %>%
-    mutate(Type = case_when(grepl("05J", SampleID) ~ "C10",
-                            grepl("07J", SampleID) ~ "SVEC")) %>%
-  group_by(SampleID) %>%
-  add_count(name = "n") %>%
-  ungroup() %>%
-  distinct(SampleID,Type, n) %>%
-  filter(n < 1000)
 
-
-supp2 <- singcell_long3 %>%
-    filter(!is.na(Intensity)) %>%
-  mutate(Type = case_when(grepl("05J", SampleID) ~ "C10",
-                            grepl("07J", SampleID) ~ "SVEC")) %>%
-  group_by(SampleID) %>%
-  add_count(name = "n") %>%
-  ungroup() %>%
-  distinct(SampleID,Type,n) %>%
-  ggplot()+
-  aes(x = Type, y = n, color = Type)+
-  geom_jitter(position = position_jitter(w = 0.1, h = 0), size = 3)+
-    theme_bw(base_size = 22) +
-  theme(legend.position = "none",
-    panel.background = element_rect(fill= 'white'),
-        axis.text.y=element_text(color = 'black', size = 22),
-        axis.text.x=element_text(angle = 0, vjust = 0.5, hjust= 0.5, color='black',size = 22),
-                panel.grid.minor = element_blank(),
-        panel.grid.major = element_blank(),
-        panel.border = element_blank(),
-    axis.line = element_line(),
-        text=element_text(family="Helvetica")) +
-  ylab("Proteins Identified (n)")+
-    scale_color_manual(values = c("#88419d", "#8c96c6"))+
-  xlab("Cell Type")+
-    geom_hline(yintercept=1000, size = 1, linetype='dotted', col = 'red')+
-  annotate("text", x = 1.5, y = 1000, label = "QC Cutoff", vjust = -0.5)
-```
-
-
-## Supplementary Figure X code (Remove cells with high keratin contamination)
 ```{r, message = FALSE, warning = FALSE,results = 'hide'}
-supp3 <- singcell_long3 %>%
-  mutate(Type = case_when(grepl("05J", SampleID) ~ "C10",
-                            grepl("07J", SampleID) ~ "SVEC")) %>%
-  mutate(keratin = case_when(grepl("Krt", Gene) ~ "Yes",
-                             TRUE ~ "No")) %>%
-  filter(keratin == "Yes") %>%
-  ggplot()+
-  aes(x = fct_reorder(SampleID, Intensity), y = Intensity, fill = Type)+
-  geom_boxplot(alpha = 0.5, show.legend = TRUE, size = 1)+
-  theme_bw(base_size = 14) +
-  theme(panel.background = element_rect(fill= 'white'),
-        axis.text.y=element_text(color = 'black', size = 14),
-        axis.text.x=element_blank(),
-        axis.ticks.x = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.grid.major = element_blank(),
-        panel.border = element_blank(),
-        text=element_text(family="Helvetica")) +
-  ylab("log2(LFQ Intensity)") +
-  xlab("Sample ID")+
-  scale_x_discrete(labels=function(x){sub("\\s", "\n", x)}) +
-      geom_hline(yintercept=20, size = 1, linetype='dotted', col = 'red')+
-  annotate("text", x = 25, y = 20, label = "QC Cutoff", vjust = -4)
-
+##Filter samples with high keratin contam
 removeID <- singcell_long3 %>%
     mutate(keratin = case_when(grepl("Krt", Gene) ~ "Yes",
                              TRUE ~ "No")) %>%
@@ -375,7 +220,6 @@ removeID <- singcell_long3 %>%
 ```
 
 
-## Supplementary Figure X code (intensity distributions)
 ```{r, message = FALSE, warning = FALSE,results = 'hide'}
 
 singcell3 <- singcell_long3 %>%
@@ -414,28 +258,6 @@ SVECcell_long <- SVECcell %>%
 singcell_long <- rbind(C10cell_long,SVECcell_long) %>%
   filter(!is.na(Intensity))
 
-
-supp4 <- singcell_long %>%
-  filter(!is.na(Intensity)) %>%
-    mutate(Type = case_when(grepl("05J", SampleID) ~ "C10",
-                            grepl("07J", SampleID) ~ "SVEC")) %>%
-  ggplot()+
-  aes(x = SampleID, y = Intensity, fill = Type)+
-  geom_boxplot(alpha = 0.5, show.legend = TRUE, size = 1)+
-  
-  theme_bw(base_size = 14) +
-  theme(panel.background = element_rect(fill= 'white'),
-        axis.text.y=element_text(color = 'black', size = 14),
-        axis.text.x=element_blank(),
-        axis.ticks.x = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.grid.major = element_blank(),
-        panel.border = element_blank(),
-        text=element_text(family="Helvetica")) +
-  ylab("log2(LFQ Intensity)") +
-  xlab("Sample ID")+
-  scale_x_discrete(labels=function(x){sub("\\s", "\n", x)}) 
-
 ```
 
 
@@ -466,226 +288,107 @@ samp_filter <- unique(singcell_long$SampleID)
 ```
 
 
-
-<!-- ```{r, message = FALSE, warning = FALSE,results = 'hide'} -->
-
-
-<!-- corx <- combined4 %>% -->
-<!--   filter(grepl(paste(samp_filter, collapse = "|"), SampleID)) %>% -->
-<!--   arrange(SampleID) %>% -->
-<!--   spread(Gene, Intensity, fill = 0) %>% -->
-<!--   ungroup() %>% -->
-<!--   remove_rownames() %>% -->
-<!--   column_to_rownames("SampleID") %>% -->
-<!--   data.frame() -->
-
-
-<!-- check <- designdist(corx, "J/pmin(A,B)") %>% -->
-<!--   as.matrix() -->
-<!-- check[check == 0] <- 1 -->
-
-<!-- corx <- combined4 %>% -->
-<!--   filter(grepl(paste(samp_filter, collapse = "|"), SampleID)) %>% -->
-<!--   arrange(SampleID) %>% -->
-<!--   spread(SampleID, Intensity) %>% -->
-<!--   ungroup()  -->
-
-<!-- corx <- corx %>% -->
-<!--   remove_rownames() %>% -->
-<!--   column_to_rownames("Gene") -->
-
-<!-- combined_cor <- Hmisc::rcorr(as.matrix(corx)) -->
-
-<!-- ncor <- as.matrix(combined_cor$n) -->
-
-
-<!-- ``` -->
-
-<!-- ## Figure 3e code -->
-<!-- ```{r, message = FALSE, warning = FALSE,results = 'hide'} -->
-
-
-<!-- correlation_gene <- inner_join(singcell_long, RNAx4) %>% -->
-<!--   mutate(Type = case_when(grepl("05J", SampleID) ~ "C10", -->
-<!--                             grepl("07J", SampleID) ~ "SVEC")) %>% -->
-<!--   mutate(Counts = log2(Counts)) -->
-
-<!-- datatest <- correlation_gene %>% -->
-<!--   group_by(Gene, Type) %>% -->
-<!--   add_count(name = "Obs") %>% -->
-<!--   filter(Obs >= 5) %>% -->
-<!--   ungroup() -->
-
-<!-- datatest <- as_tibble(datatest) -->
-
-
-<!-- data_nest <- group_by(datatest,Type, Gene) %>% nest() -->
-
-<!-- cor_fun <- function(df) cor.test(df$Intensity, df$Counts, method = "pearson") %>% -->
-<!--   broom::tidy() -->
-
-<!-- data_nest <- mutate(data_nest, model = map(data, cor_fun)) -->
-<!-- corr_pr <- dplyr::select(data_nest, -data) %>% unnest(cols = c(model)) -->
-<!-- corr_pr <- corr_pr %>% -->
-<!--   ungroup() %>% -->
-<!--   mutate(FDR = p.adjust(`p.value`, method = "BH")) %>% -->
-<!--  mutate(Type2 = "RNA-Protein") %>% -->
-<!--   mutate(Obs = parameter + 2) -->
-
-
-<!-- proteins <- corr_pr %>% -->
-<!--   filter(p.value <= 0.01 ) %>% -->
-<!--   dplyr::select(Gene, Obs, p.value) -->
-
-<!-- p <- inner_join(datatest, proteins) -->
-
-
-<!-- set.seed(49) -->
-<!-- datatest <- correlation_gene %>% -->
-<!--   group_by(Gene, Type) %>% -->
-<!--   add_count(name = "Obs") %>% -->
-<!--   filter(Obs >= 5) %>% -->
-<!--   transform(Counts = sample(Counts)) %>% -->
-<!--   transform(Intensity = sample(Intensity)) %>% -->
-<!--   ungroup() -->
-
-<!-- datatest <- as_tibble(datatest) -->
-
-<!-- data_nest <- group_by(datatest, Type, Gene) %>% nest()  -->
-
-<!-- cor_fun <- function(df) cor.test(df$Intensity, df$Counts, method = "pearson") %>% -->
-<!--   broom::tidy() -->
-
-<!-- data_nest <- mutate(data_nest, model = map(data, cor_fun)) -->
-<!-- corr_pr2 <- dplyr::select(data_nest, -data) %>% unnest(cols = c(model)) -->
-<!-- corr_pr2 <- corr_pr2 %>% -->
-<!--   ungroup() %>% -->
-<!--   mutate(FDR = p.adjust(`p.value`, method = "BH")) %>% -->
-<!--   mutate(Type2 = "Randomized") -->
-
-<!-- combined_pearson <- full_join(corr_pr, corr_pr2) -->
-
-<!-- main1 <- combined_pearson %>% -->
-<!--   ggplot()+ -->
-<!--   aes(x = estimate, fill = Type2)+ -->
-<!--   geom_density(alpha = 0.7)+ -->
-<!--   xlab("")+ -->
-<!--   ylab("")+ -->
-<!--   theme_minimal(base_size = 28)+ -->
-<!--      theme(panel.grid.minor = element_blank(), -->
-<!--         panel.grid.major = element_blank(), -->
-<!--         panel.border = element_blank(), -->
-<!--         axis.line = element_line(), -->
-<!--         axis.text.y=element_blank(), -->
-<!--         text=element_text(family="Helvetica"))+ -->
-<!--   scale_fill_discrete(name = "") -->
+## Figure 3b code
+```{r, message = FALSE, warning = FALSE,results = 'hide'}
 
 
 
-<!-- # print(ks.test(corr_pr$estimate, corr_pr2$estimate)) -->
 
-<!-- # wilcox.test(corr_pr$estimate, corr_pr2$estimate, alternative = "two.sided") -->
+RNAx2 <- RNAx_TPM %>%
+  pivot_longer(!Gene, names_to = "SampleID", values_to = "TPM") 
 
-<!-- ``` -->
+RNAx3 <- RNAx_counts %>%
+  pivot_longer(!Gene, names_to = "SampleID", values_to = "Counts") 
 
-
-
-<!-- ```{r, echo = FALSE, message=TRUE, warning=FALSE} -->
-<!-- library(DreamAI) -->
+RNAx4 <- inner_join(RNAx2, RNAx3)
 
 
-<!-- ### C10 imputation alone -->
-<!-- singcell_wide <- singcell_long %>% -->
-<!--   mutate(Type = case_when(grepl("05J", SampleID) ~ "C10", -->
-<!--                             grepl("07J", SampleID) ~ "SVEC")) %>% -->
-<!--   filter(Type == "C10") %>% -->
-<!--   group_by(Gene) %>% -->
-<!--   add_count(name = "n") %>% -->
-<!--   filter(n >= 18) %>% -->
-<!--   dplyr::select(Gene, SampleID, Intensity) %>% -->
-<!--   ungroup() %>% -->
-<!--   spread(SampleID, Intensity) %>% -->
-<!--   column_to_rownames(var= "Gene") -->
+correlation_gene <- inner_join(singcell_long, RNAx4) %>%
+  filter(!is.na(TPM)) %>%
+  filter(TPM >= 0.1) %>%
+  mutate(TPM = log2(TPM))
 
-
-
-<!-- impute <- DreamAI(singcell_wide, k = 10, maxiter_MF = 10, ntree = 100, -->
-<!--         maxnodes = NULL, maxiter_ADMIN = 30, tol = 10^(-2), -->
-<!--         gamma_ADMIN = NA, gamma = 50, CV = FALSE, -->
-<!--         fillmethod = "row_mean", maxiter_RegImpute = 10, -->
-<!--         conv_nrmse = 1e-06, iter_SpectroFM = 40, method = c("KNN", "ADMIN", -->
-<!--   "MissForest", "Birnn", "SpectroFM", "RegImpute"), -->
-<!--         out = c("Ensemble")) -->
-
-<!-- C10SVEC.prot_complete <- as.data.frame(impute$Ensemble) -->
-
-<!-- write.csv(C10SVEC.prot_complete, "C10_Impute.csv") -->
-
-<!-- ### SVEC imputation alone -->
-<!-- singcell_wide <- singcell_long %>% -->
-<!--   mutate(Type = case_when(grepl("05J", SampleID) ~ "C10", -->
-<!--                             grepl("07J", SampleID) ~ "SVEC")) %>% -->
-<!--   filter(Type == "SVEC") %>% -->
-<!--   group_by(Gene) %>% -->
-<!--   add_count(name = "n") %>% -->
-<!--   filter(n >= 19) %>% -->
-<!--   dplyr::select(Gene, SampleID, Intensity) %>% -->
-<!--   ungroup() %>% -->
-<!--   spread(SampleID, Intensity) %>% -->
-<!--   column_to_rownames(var= "Gene") -->
+datatest <- correlation_gene %>%
+  mutate(Type = case_when(grepl("C10_", SampleID) ~ "C10",
+                          grepl("SVEC", SampleID) ~ "SVEC")) %>%
+  filter(Type  == "C10" | Type == "SVEC") %>%
+  group_by(Gene, Type) %>%
+  add_count(name = "Obs") %>%
+  filter(Obs >= 4) %>%
+  ungroup()
 
 
 
-<!-- impute <- DreamAI(singcell_wide, k = 10, maxiter_MF = 10, ntree = 100, -->
-<!--         maxnodes = NULL, maxiter_ADMIN = 30, tol = 10^(-2), -->
-<!--         gamma_ADMIN = NA, gamma = 50, CV = FALSE, -->
-<!--         fillmethod = "row_mean", maxiter_RegImpute = 10, -->
-<!--         conv_nrmse = 1e-06, iter_SpectroFM = 40, method = c("KNN", "ADMIN", -->
-<!--   "MissForest", "Birnn", "SpectroFM", "RegImpute"), -->
-<!--         out = c("Ensemble")) -->
-
-<!-- C10SVEC.prot_complete <- as.data.frame(impute$Ensemble) -->
-
-<!-- write.csv(C10SVEC.prot_complete, "SVEC_Impute.csv") -->
-
-<!-- ### keep only proteins that have < ~50% missing values in both C10 and SVEC -->
-<!-- singcell_wide <- singcell_long %>% -->
-<!--       mutate(Type = case_when(grepl("05J", SampleID) ~ "C10", -->
-<!--                             grepl("07J", SampleID) ~ "SVEC")) %>% -->
-<!--   group_by(Gene, Type) %>% -->
-<!--   add_count(name = "n") %>% -->
-<!--   group_by(Gene) %>% -->
-<!--   add_count(name = "n2") %>% -->
-<!--   mutate(n3 = n2 - n) %>% -->
-<!--   mutate(Impute = case_when(n >= 19 & Type == "SVEC"  & n3 >= 18 ~ "Keep", -->
-<!--                             n >= 18 & Type == "C10" & n3 >= 19 ~ "Keep", -->
-<!--                             TRUE ~ "Discard")) %>% -->
-<!--   filter(Impute == "Keep") %>% -->
-<!--   dplyr::select(Gene, SampleID, Intensity) %>% -->
-<!--   ungroup() %>% -->
-<!--   spread(SampleID, Intensity) %>% -->
-<!--   column_to_rownames(var= "Gene") -->
+datatest <- as_tibble(datatest)
 
 
+data_nest <- group_by(datatest,Type, Gene) %>% nest()
 
-<!-- impute <- DreamAI(singcell_wide, k = 10, maxiter_MF = 10, ntree = 100, -->
-<!--         maxnodes = NULL, maxiter_ADMIN = 30, tol = 10^(-2), -->
-<!--         gamma_ADMIN = NA, gamma = 50, CV = FALSE, -->
-<!--         fillmethod = "row_mean", maxiter_RegImpute = 10, -->
-<!--         conv_nrmse = 1e-06, iter_SpectroFM = 40, method = c("KNN", "ADMIN", -->
-<!--   "MissForest", "Birnn", "SpectroFM", "RegImpute"), -->
-<!--         out = c("Ensemble")) -->
+cor_fun <- function(df) cor.test(df$Intensity, df$TPM, method = "pearson") %>%
+  broom::tidy()
 
-<!-- C10SVEC.prot_complete <- as.data.frame(impute$Ensemble) -->
+data_nest <- mutate(data_nest, model = map(data, cor_fun))
+corr_pr <- dplyr::select(data_nest, -data) %>% unnest(cols = c(model))
+corr_pr <- corr_pr %>%
+  ungroup() %>%
+  mutate(FDR = p.adjust(`p.value`, method = "BH")) %>%
+  mutate(Type2 = "mRNA-Protein")
 
-<!-- write.csv(C10SVEC.prot_complete, "Protein_complete_Impute.csv") -->
+set.seed(524)
+datatest <- correlation_gene %>%
+  mutate(Type = case_when(grepl("C10_", SampleID) ~ "C10",
+                          grepl("SVEC", SampleID) ~ "SVEC")) %>%
+  filter(Type  == "C10" | Type == "SVEC") %>%
+  group_by(Gene, Type) %>%
+  add_count(name = "Obs") %>%
+  filter(Obs >= 4) %>%
+  transform(TPM = sample(TPM)) %>%
+  transform(Intensity = sample(Intensity)) %>%
+  ungroup()
+
+datatest <- as_tibble(datatest)
+
+data_nest <- group_by(datatest,Type, Gene) %>% nest()
+
+cor_fun <- function(df) cor.test(df$Intensity, df$TPM, method = "pearson") %>%
+  broom::tidy()
+
+data_nest <- mutate(data_nest, model = map(data, cor_fun))
+corr_pr2 <- dplyr::select(data_nest, -data) %>% unnest(cols = c(model))
+corr_pr2 <- corr_pr2 %>%
+  ungroup() %>%
+  mutate(FDR = p.adjust(`p.value`, method = "BH")) %>%
+  mutate(Type2 = "Randomized")
+
+combined_pearson <- full_join(corr_pr, corr_pr2)
+
+main1 <- combined_pearson %>%
+  ggplot()+
+  aes(x = estimate, fill = Type2)+
+  geom_histogram(alpha = 0.6,
+                 position = "identity",
+                 bins = 100)+
+  xlab("")+
+  ylab("Genes (n)")+
+  theme_minimal(base_size = 24)+
+  theme(panel.grid.minor = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.border = element_blank(),
+        axis.line = element_line())+
+  scale_fill_brewer(name = "", palette = 2,type = "qual",
+                    direction = -1)+
+  theme(legend.position = "bottom",
+        legend.direction = "vertical",
+        legend.box = "horizontal")+
+  geom_vline(xintercept = 0)
 
 
-<!-- ``` -->
+ wilcox.test(corr_pr$estimate, corr_pr2$estimate, alternative = "two.sided")
+
+```
 
 
-
-## Figure 3d,e code
+## Figure 3c,d code
 ```{r, message = FALSE, warning = FALSE,results = 'hide'}
 
   
@@ -794,209 +497,6 @@ p3 <- FeaturePlot(C10SVEC,label = FALSE, features = c("prot_H2-K1"),
                   pt.size = 3.5)+
   scale_x_continuous(limits = c(-7, 7))+
   scale_y_continuous(limits = c(-8,9))
-
-
-C10SVEC.markers <- FindAllMarkers(C10SVEC, assay = "Prot", only.pos = TRUE,
-                                  test.use = "wilcox",
-                                  #min.diff.pct = 0.2,
-                                  min.pct = 0.25, logfc.threshold = 1)
-
-C10SVEC.markers %>% group_by(cluster) %>% top_n(n = 2, wt = avg_log2FC)
-
-top10 <- C10SVEC.markers %>% group_by(cluster) %>% top_n(n = 5, wt = avg_log2FC)
-
-heat1 <- DoHeatmap(C10SVEC, assay  ="Prot", features = top10$gene, slot = "scale.data",
-          group.bar.height = 0,
-          draw.lines = TRUE,
-          label = FALSE,
-          lines.width = 1,
-          ) + scale_fill_viridis() + NoLegend()
-
-
-C10SVEC.markers <- FindAllMarkers(C10SVEC, assay = "RNA", only.pos = TRUE,
-                                  test.use = "wilcox",
-                                  min.diff.pct = 0.2,
-                                  min.pct = 0.25, logfc.threshold = 1)
-
-C10SVEC.markers %>% group_by(cluster) %>% top_n(n = 2, wt = avg_log2FC)
-
-top10 <- C10SVEC.markers %>% group_by(cluster) %>% top_n(n = 5, wt = avg_log2FC)
-
-heat2 <- DoHeatmap(C10SVEC, assay  ="RNA", features = top10$gene, slot = "scale.data",
-          group.bar.height = 0,
-          draw.lines = TRUE,
-          label = FALSE,
-          lines.width = 1,
-          ) + scale_fill_viridis()
-
-
-```
-
-
-## Supplementary PCA, scRNAseq (S4B)
-
-```{r, echo = FALSE, message=FALSE, warning=FALSE, dpi=300, fig.width= 8, fig.height = 6, results='hide'}
-
-
-
-DefaultAssay(C10SVEC) <- 'RNA'
-
-PCA1 <- GetAssayData(object = C10SVEC, assay = "RNA", slot = "scale.data")
-PCA11  <- pca(PCA1)
-PCA11$metadata <- C10SVEC[["celltype"]]
-biplot(PCA11, x = "PC1", y = "PC2", showLoadings = FALSE,colby = "celltype",
-       labSize = 5, pointSize = 5, sizeLoadingsNames = 5,
-              ntopLoadings = 4,
-       lab = NULL,
-       legendPosition = "right")+
-  ggtitle("PCA, scRNAseq")+
-  theme(panel.background = element_rect(fill= 'white'),
-        text=element_text(family="Helvetica"))
-
-
-```
-
-## Supplementary PCA, scProteomics (S4A)
-
-```{r, echo = FALSE, message=FALSE, warning=FALSE, dpi=300, fig.width= 8, fig.height = 6, results='hide'}
-
-DefaultAssay(C10SVEC) <- 'Prot'
-
-PCA2 <- GetAssayData(object = C10SVEC, assay = "Prot", slot = "scale.data")
-PCA21  <- pca(PCA2)
-PCA21$metadata <- C10SVEC[["celltype"]]
-biplot(PCA21,x = "PC1", y = "PC2", showLoadings = FALSE,colby = "celltype",
-       labSize = 5, pointSize = 5, sizeLoadingsNames = 5,
-       ntopLoadings = 4,
-       lab =  NULL,
-       legendPosition = "right")+
-  ggtitle("PCA, scProteomics")+
-  theme(panel.background = element_rect(fill= 'white'),
-        text=element_text(family="Helvetica"))
-
-
-
-```
-
-
-
-## Figure 3f code
-```{r, message = FALSE, warning = FALSE,results = 'hide'}
-
-C10SVEC.rna <- read.csv(file = "C10SVEC_singlecells_norm_counts.csv", sep = ",",
-                               header = TRUE, row.names = 1, check.names = FALSE) %>%
-  dplyr::select( starts_with("05J")) %>%
-  as.sparse()
-
-names <- C10SVEC.rna@Dimnames[[2]]
-
-
-C10SVEC.prot <- read.csv(file = "C10_singlecells_protein_impute.csv", sep = ",",
-                         header = TRUE, row.names = 1, check.names = FALSE) %>%
-  as.sparse()
-
-
-names2 <- C10SVEC.prot@Dimnames[[2]]
-
-C10SVEC_sub.rna <- read.csv(file = "C10SVEC_singlecells_norm_counts.csv", sep = ",",
-                        header = TRUE, row.names = 1, check.names = FALSE) %>%
-  dplyr::select( starts_with("05J")) %>%
-             dplyr::select(one_of(names2))
-
-names(C10SVEC_sub.rna) <- gsub(x = names(C10SVEC_sub.rna),
-                               pattern = "05J_C10_", replacement = "")
-C10SVEC_sub.rna <- as.sparse(C10SVEC_sub.rna)
-
-check <- colnames(C10SVEC_sub.rna)
-
-
-  
-C10SVEC_sub.prot <- read.csv(file = "C10_singlecells_protein_impute.csv", sep = ",",
-                           header = TRUE, row.names = 1, check.names = FALSE) %>%
-  dplyr::select( starts_with("05J")) %>%
-  dplyr::select(one_of(names))
-
-names(C10SVEC_sub.prot) <- gsub(x = names(C10SVEC_sub.prot),
-                               pattern = "05J_C10_", replacement = "")
-
-C10SVEC_sub.prot <- C10SVEC_sub.prot[ , check] %>%
-  as.sparse()
-
-# creates a Seurat object based on the scRNA-seq data
-C10SVEC <- CreateSeuratObject(counts = C10SVEC_sub.rna)
-
-# We can see that by default, the cbmc object contains an assay storing RNA measurement
-Assays(C10SVEC)
-
-# create a new assay to store ADT information
-prot_assay <- CreateAssayObject(counts = C10SVEC_sub.prot)
-
-# add this assay to the previously created Seurat object
-C10SVEC[["Prot"]] <- prot_assay
-
-# Validate that the object now contains multiple assays
-Assays(C10SVEC)
-
-rownames(C10SVEC[["Prot"]])
-
-# List the current default assay
-DefaultAssay(C10SVEC)
-DefaultAssay(C10SVEC) <- 'RNA'
-
-
-C10SVEC <- NormalizeData(C10SVEC)  
-C10SVEC <- FindVariableFeatures(C10SVEC,
-                                nfeatures = 3000)
-C10SVEC <- ScaleData(C10SVEC)
-C10SVEC <- RunPCA(C10SVEC, verbose = FALSE,
-                  npcs = 25)
-C10SVEC <- FindNeighbors(C10SVEC, dims = 1:2)
-C10SVEC <- FindClusters(C10SVEC, resolution = 1,verbose = FALSE)
-C10SVEC <- RunUMAP(C10SVEC, dims = 1:2,
-                   n.neighbors = 25)
-
-
-C10SVEC <- CellCycleScoring(C10SVEC, s.features = s.genes, g2m.features = g2m.genes,
-                            set.ident = TRUE)
-
-C10SVEC <- RunPCA(C10SVEC, features = c(s.genes, g2m.genes),
-                  npcs = 25)
-
-
-p4 <- DimPlot(C10SVEC, label = FALSE,
-        pt.size = 6) +  scale_x_continuous(limits = c(-5, 3))+
-  scale_y_continuous(limits = c(-2.5,3))
-
-p5 <- FeaturePlot(C10SVEC,label = FALSE, features = c("Cdk1"),
-                  reduction = 'umap', max.cutoff = 100, 
-                  #cols = c("#ffdb00","#ffa904", "#ee7b06", "#a12424", "#400b0b"),
-                  cols = c("lightgrey", "purple"),
-                  ncol = 1,
-                  repel = TRUE,
-                  order = TRUE,
-                  slot = "scale.data",
-                  pt.size = 6)+
-  scale_x_continuous(limits = c(-5, 3))+
-  scale_y_continuous(limits = c(-2.5,3))
-
-DefaultAssay(C10SVEC) <- 'Prot'
-C10SVEC <- FindVariableFeatures(C10SVEC)
-C10SVEC <-  ScaleData(C10SVEC) %>% RunPCA(reduction.name = 'apca',
-                                          npcs = 25)
-
-
-p6 <- FeaturePlot(C10SVEC,label = FALSE, features = c("prot_Cdk1"),
-            reduction = 'umap', max.cutoff = 100, 
-            #cols = c("#ffdb00","#ffa904", "#ee7b06", "#a12424", "#400b0b"),
-            cols = c("lightgrey", "red"),
-            ncol = 1,
-            repel = TRUE,
-            order = TRUE,
-            slot = "scale.data",
-            pt.size = 6)+
-  scale_x_continuous(limits = c(-5, 3))+
-  scale_y_continuous(limits = c(-2.5,3))
-
 
 ```
 
@@ -1174,320 +674,6 @@ corrplot(corTest, method = 'shade', order = 'hclust',
              73,99), col = 'white',
            lwd = 10)+
   theme(text=element_text(family="Helvetica"))
-
-
-```
-
-**Figure 3b: Distributions of Pearson Correlation coefficients**
-```{r, message=FALSE, warning=FALSE, dpi=300, fig.width= 8, fig.height = 5, results='hide'}
-corTest[lower.tri(corTest)] <- NA
-
-corTest2 <- corTest %>%
-  melt()
-
-corTest2 %>%
-  filter(value != 1) %>%
-  filter(!is.na(value)) %>%
-  mutate(Var1 = paste(Var1, "_", sep =  "")) %>%
-  mutate(Var2 = paste(Var2, "_", sep = "")) %>%
-  mutate(Type1 = case_when(grepl("05J", Var1) ~ "C10",
-                           grepl("07J", Var1) ~ "SVEC")) %>%
-  mutate(Type2 = case_when(grepl("05J", Var2) ~ "C10",
-                           grepl("07J", Var2) ~ "SVEC")) %>%
-  mutate(Var1 = case_when(Type1 == "C10" ~ paste("__", Var1, sep =  ""),
-                          TRUE ~ Var1)) %>%
-  mutate(Var2 = case_when(Type2 == "C10" ~ paste("__", Var2, sep =  ""),
-                          TRUE ~ Var2)) %>%
-  mutate(Comparison = case_when(Type1 == Type2 & grepl("_RNA", Var1) & grepl("_RNA", Var2) ~ "scRNAseq",
-                                Type1 == Type2 & !grepl("_RNA", Var1) & !grepl("_RNA", Var2)~ "scProteomics",
-                                Type1 == Type2 & !grepl("_RNA", Var1) & grepl("_RNA", Var2) ~ "scProteomics vs scRNAseq",
-                                Type1 == Type2 & grepl("_RNA", Var1) & !grepl("_RNA", Var2) ~ "scProteomics vs scRNAseq",
-                                TRUE ~ "discard")) %>%
-    mutate(Comparison = case_when(Type1 == Type2 & Comparison == "scProteomics vs scRNAseq" & substring(Var1, 10,12) == substring(Var2, 10,12) ~ "Intracell",
-                                Type1 == Type2 & Comparison == "scProteomics vs scRNAseq" & substring(Var1, 10,12) != substring(Var2, 10,12) ~ "Intercell",
-                                TRUE ~ Comparison)) %>%
-  filter(Comparison  != "discard") %>%
-  ggplot()+
-  aes(x = fct_relevel(Comparison, "scProteomics",
-                      "scRNAseq",
-                      "scProteomics vs scRNAseq"),
-      y = value, fill = Type1)+
-  geom_boxplot(alpha = 0.5, show.legend = FALSE, size = 1)+
-  theme_bw(base_size = 28) +
-  theme(panel.background = element_rect(fill= 'white'),
-        axis.text.y=element_text(color = 'black', size = 28),
-        axis.text.x=element_text(angle = 0, vjust = 0.5, hjust= 0.5, color='black',size = 28),
-        panel.grid.minor = element_blank(),
-        panel.grid.major = element_blank(),
-        panel.border = element_blank(),
-        axis.line = element_line(),
-        text=element_text(family="Helvetica")) +
-  ylab("") +
-  xlab("")+
-  scale_x_discrete(labels=function(x){sub("\\s", "\n", x)})+
-  scale_fill_manual( values = c("#00D65C", "#82B7FF"))+
-  scale_y_continuous(limits = c(0,1))
- # ggsave("Pearson_Corr.png", width = 12, height = 6)
-
-
-```
-
-**Figure 3c: Distributions of overlapping identifications**
-```{r, message=FALSE, warning=FALSE, dpi=300, fig.width= 8, fig.height = 5, results='hide'}
-
-corx <- combined4 %>%
-  arrange(SampleID) %>%
-  spread(SampleID, logriBAQ) %>%
-  ungroup() 
-
-corx <- corx %>%
-  remove_rownames() %>%
-  column_to_rownames("Gene")
-
-combined_cor <- Hmisc::rcorr(as.matrix(corx))
-
-ncor <- as.matrix(combined_cor$n)
-
-
-ncor[lower.tri(ncor)] <- NA
-
-ncor2 <- ncor %>%
-  melt()
-
-ncor2 %>%
-    filter(!is.na(value)) %>%
-  filter(Var1 != Var2) %>%
-mutate(Var1 = paste(Var1, "_", sep =  "")) %>%
-  mutate(Var2 = paste(Var2, "_", sep = "")) %>%
-  mutate(Type1 = case_when(grepl("05J", Var1) ~ "C10",
-                           grepl("07J", Var1) ~ "SVEC")) %>%
-  mutate(Type2 = case_when(grepl("05J", Var2) ~ "C10",
-                           grepl("07J", Var2) ~ "SVEC")) %>%
-  mutate(Var1 = case_when(Type1 == "C10" ~ paste("__", Var1, sep =  ""),
-                          TRUE ~ Var1)) %>%
-  mutate(Var2 = case_when(Type2 == "C10" ~ paste("__", Var2, sep =  ""),
-                          TRUE ~ Var2)) %>%
-  mutate(Comparison = case_when(Type1 == Type2 & grepl("_RNA", Var1) & grepl("_RNA", Var2) ~ "scRNAseq",
-                                Type1 == Type2 & !grepl("_RNA", Var1) & !grepl("_RNA", Var2)~ "scProteomics",
-                                Type1 == Type2 & !grepl("_RNA", Var1) & grepl("_RNA", Var2) ~ "scProteomics vs scRNAseq",
-                                Type1 == Type2 & grepl("_RNA", Var1) & !grepl("_RNA", Var2) ~ "scProteomics vs scRNAseq",
-                                TRUE ~ "discard")) %>%
-    mutate(Comparison = case_when(Type1 == Type2 & Comparison == "scProteomics vs scRNAseq" & substring(Var1, 10,12) == substring(Var2, 10,12) ~ "Intracell",
-                                Type1 == Type2 & Comparison == "scProteomics vs scRNAseq" & substring(Var1, 10,12) != substring(Var2, 10,12) ~ "Intercell",
-                                TRUE ~ Comparison)) %>%
-  filter(Comparison  != "discard") %>%
-  ggplot()+
-  aes(x = fct_relevel(Comparison,"scRNAseq", "scProteomics",
-                      "Proteomics vs RNAseq"),
-      y = value, fill = Type1)+
-  geom_boxplot(alpha = 0.5, show.legend = TRUE, size = 1)+
-  theme_bw(base_size = 28) +
-  theme(panel.background = element_rect(fill= 'white'),
-        axis.text.y=element_text(color = 'black', size = 28),
-        axis.text.x=element_text(angle = 0, vjust = 0.5, hjust= 0.5, color='black',size = 28),
-        panel.grid.minor = element_blank(),
-        panel.grid.major = element_blank(),
-        panel.border = element_blank(),
-        axis.line = element_line(),
-        text=element_text(family="Helvetica")) +
-  ylab("") +
-  xlab("")+
-  scale_x_discrete(labels=function(x){sub("\\s", "\n", x)})+
-  scale_fill_manual(name = "Cell Type", values = c("#00D65C", "#82B7FF"))
-    #ggsave("overlap.png", width = 12, height = 6)
-
-```
-
-
-
-## Figure 3d. Seurat heatmap showing differentially expressed gene markers for SVEC and C10 cells (Protein and RNA)
-```{r, message=FALSE, warning=FALSE, dpi=300, fig.width= 8, fig.height = 5, results='hide'}
-
-heat1 + heat2
-
-```
-
-<!-- ## Figure 3b. SC3 heatmap showing differentially expressed gene markers for SVEC and C10 cells (and associated code) -->
-<!-- ```{r, message=FALSE, warning=FALSE, dpi=300, fig.width= 8, fig.height = 6, results='hide'} -->
-
-
-<!-- type <- RNA_norm3 %>% -->
-<!--   pivot_longer(everything(), names_to = "SampleID") %>% -->
-<!--   dplyr::select(SampleID) %>% -->
-<!--   distinct(SampleID) %>% -->
-<!--   mutate(cell_type1 = case_when(grepl("05J", SampleID) ~ "C10", -->
-<!--                              grepl("07J", SampleID) ~ "SVEC")) %>% -->
-<!--   remove_rownames() %>% -->
-<!--   column_to_rownames(var="SampleID") -->
-
-<!-- type$cell_type1 <- as.factor(type$cell_type1) -->
-
-<!-- sce <- SingleCellExperiment( -->
-<!--   assays = list( -->
-<!--     counts = as.matrix(RNA_norm3), -->
-<!--     logcounts = log2(as.matrix(RNA_norm3) + 1) -->
-<!--   ), -->
-<!--   colData = type -->
-<!-- ) -->
-
-<!-- rowData(sce)$feature_symbol <- rownames(sce) -->
-
-<!-- sce <- sce[!duplicated(rowData(sce)$feature_symbol), ] -->
-
-<!-- sce <- runPCA(sce) -->
-
-
-<!-- sce <- sc3(sce, ks = 2, biology = TRUE, -->
-<!--            gene_filter = TRUE, -->
-<!--            pct_dropout_min = 8) -->
-
-
-<!-- sce <- runPCA(sce) -->
-
-
-<!-- sc3_plot_markers(sce, k = 2, -->
-<!--                  show_pdata = c( -->
-<!--                    "cell_type1", -->
-<!--                    "sc3_2_clusters" -->
-<!--                  )) -->
-<!--      theme( -->
-<!--         text=element_text(family="Helvetica")) -->
-
-<!-- ``` -->
-
-## Figure 3e. WNN UMAP with H2-K1 protein/gene expression for C10 and SVEC cells
-```{r, echo = FALSE, message=FALSE, warning=FALSE, dpi=300, fig.width= 10, fig.height = 6, results='hide'}
-p1+p2+p3
-
-```
-
-## Figure 3f. Cell cycle UMAP with Cdk1 protein/gene expression for C10 cells
-```{r, echo = FALSE, message=FALSE, warning=FALSE, dpi=300, fig.width= 10, fig.height = 6, results='hide'}
-p4+p5+p6
-```
-
-# Supplementary Figures
-
-## Supplementary Figure X
-**Supplementary Figure. Total genes detected with at least 5 raw counts in SVEC and C10 cells  (scRNAseq)**
-```{r,echo = FALSE,message=FALSE, warning=FALSE, results='hide'}
-supp1
-```
-
-
-## Supplementary Figure X
-**Supplementary Figure: Total number of proteins observed per dataset**
-```{r,echo = FALSE,message=FALSE, warning=FALSE, results='hide'}
-supp2
-```
-
-## Supplementary Figure X
-**Supplementary Figure: Intensity distributions of keratin proteins**
-```{r,echo = FALSE,message=FALSE, warning=FALSE, results='hide'}
-supp3
-```
-
-
-## Supplementary Figure X
-**Supplementary Figure: Intensity distributions of C10 and SVEC cells post-QC filtering and normalization**
-```{r,echo = FALSE,message=FALSE, warning=FALSE, results='hide'}
-supp4
-```
-
-
-## Supplementary Figure X
-**Supplementary Figure: PCA using scRNAseq and scProteomics**
-```{r,echo = FALSE,message=FALSE, warning=FALSE, results='hide'}
-
-
-# C10SVEC.rna <- read.csv(file = "NormCounts_C10_svec.csv", sep = ",",
-#                                header = TRUE, row.names = 1, check.names = FALSE) %>%
-#   dplyr::select( starts_with("05J")) %>%
-#   as.sparse()
-# 
-# names <- C10SVEC.rna@Dimnames[[2]]
-# 
-# 
-# C10SVEC.prot <- read.csv(file = "C10_Impute.csv", sep = ",",
-#                          header = TRUE, row.names = 1, check.names = FALSE) %>%
-#   as.sparse()
-# 
-# 
-# names2 <- C10SVEC.prot@Dimnames[[2]]
-# 
-# C10SVEC_sub.rna <- read.csv(file = "NormCounts_C10_svec.csv", sep = ",",
-#                         header = TRUE, row.names = 1, check.names = FALSE) %>%
-#   dplyr::select( starts_with("05J")) %>%
-#              dplyr::select(one_of(names2))
-# 
-# names(C10SVEC_sub.rna) <- gsub(x = names(C10SVEC_sub.rna),
-#                                pattern = "05J_C10_", replacement = "")
-# C10SVEC_sub.rna <- as.sparse(C10SVEC_sub.rna)
-# 
-# check <- colnames(C10SVEC_sub.rna)
-# 
-# 
-#   
-# C10SVEC_sub.prot <- read.csv(file = "C10_Impute.csv", sep = ",",
-#                            header = TRUE, row.names = 1, check.names = FALSE) %>%
-#   dplyr::select( starts_with("05J")) %>%
-#   dplyr::select(one_of(names))
-# 
-# names(C10SVEC_sub.prot) <- gsub(x = names(C10SVEC_sub.prot),
-#                                pattern = "05J_C10_", replacement = "")
-# 
-# C10SVEC_sub.prot <- C10SVEC_sub.prot[ , check] %>%
-#   as.sparse()
-#   
-# C10SVEC <- CreateSeuratObject(counts = C10SVEC_sub.rna)
-# 
-# 
-# prot_assay <- CreateAssayObject(counts = C10SVEC_sub.prot)
-# 
-# C10SVEC[["Prot"]] <- prot_assay
-# 
-# 
-# DefaultAssay(C10SVEC) <- 'RNA'
-# 
-# C10SVEC <- NormalizeData(C10SVEC)  
-# C10SVEC <- FindVariableFeatures(C10SVEC,
-#                                 nfeatures = 3000)
-# C10SVEC <- ScaleData(C10SVEC)
-# C10SVEC <- RunPCA(C10SVEC, verbose = FALSE,
-#                   npcs = 25)
-# C10SVEC <- FindNeighbors(C10SVEC, dims = 1:2)
-# C10SVEC <- FindClusters(C10SVEC, resolution = 1,verbose = FALSE)
-# C10SVEC <- RunUMAP(C10SVEC, dims = 1:2,
-#                    n.neighbors = 25)
-
-
-DefaultAssay(C10SVEC) <- 'Prot'
-
-VariableFeatures(C10SVEC) <- rownames(C10SVEC[["Prot"]])
-C10SVEC <-  ScaleData(C10SVEC) %>% RunPCA(reduction.name = 'apca',
-                                          npcs = 25)
-
-DefaultAssay(C10SVEC) <- 'RNA'
-
-s.genes <- read.csv("sgenes.csv", header = FALSE,
-                    check.names = FALSE)$V1
-g2m.genes <- read.csv("g2mgenes.csv", header = FALSE)$V1
-
-C10SVEC <- CellCycleScoring(C10SVEC, s.features = s.genes, g2m.features = g2m.genes,
-                            set.ident = TRUE)
-
-C10SVEC <- RunPCA(C10SVEC, features = c(s.genes, g2m.genes),
-                  npcs = 25)
-
-DimPlot(C10SVEC, label = FALSE,
-        pt.size = 4)
-
-FeaturePlot(C10SVEC, features = c("Cdk1", "prot_Cdk1"),blend = TRUE,
-            keep.scale = NULL,
-            combine = FALSE,
-            blend.threshold = 1,
-            slot = "scale.data",
-            pt.size = 4)
 
 
 ```
