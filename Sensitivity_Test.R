@@ -78,18 +78,12 @@ csc %>%
   geom_hline(yintercept = pep_Missing1$LocalSensitivityMean,
              linetype = "dashed",
              color = c("#F8766D","#C77CFF"))+
-  #geom_hline(yintercept = pep_Missing1$TotalSensitivity,
-   #          color = c("#F8766D","#C77CFF"))+
   geom_hline(yintercept = pep_Missing3$LocalSensitivityMean,
              linetype = "dashed",
              color = "#00BFC4")+
- # geom_hline(yintercept = pep_Missing3$TotalSensitivity,
-    #         color = "#00BFC4")+
   geom_hline(yintercept = pep_Missing2$LocalSensitivityMean,
              linetype = "dashed",
              color = "#7CAE00")+
- # geom_hline(yintercept = pep_Missing2$TotalSensitivity,
-    #         color = "#7CAE00")+
   scale_y_continuous(limits = c(0,26000))+
   theme_bw(base_size = 20) +
   theme(#legend.position = "none",
@@ -101,10 +95,8 @@ csc %>%
         panel.border = element_blank(),
         axis.line = element_line())+
   ylab("Sensitivity (Peptides ,n)")+
-  xlab("Number of Cells")+
-  ggsave("sensitivity_index.png", width = 8, height = 4.7)
+  xlab("Number of Cells")
 
-  
   ji <- do.call("rbind", list(ji1,ji2,ji3))
   
 
@@ -122,10 +114,7 @@ ji %>%
           panel.grid.major = element_blank(),
           panel.border = element_blank(),
           axis.line = element_line())+
-  ylab("Jaccard Index")+
-  ggsave("jaccard_index.png", width = 8, height = 4.7)
-
-
+  ylab("Jaccard Index")
 
 data_completedness <- do.call("rbind", list(pep_Missing1,pep_Missing2,pep_Missing3)) %>%
   mutate(Completeness = Completeness * 100) %>%
@@ -158,6 +147,4 @@ data_completedness <- do.call("rbind", list(pep_Missing1,pep_Missing2,pep_Missin
    ylab("Local Sensitivty")+
    xlab("Data completeness (%)")+
    scale_size(range = c(0.27,1.2),
-              breaks = c(31,39,62,128))+
-   ggsave("data_completeness.png", width = 8, height = 4.7)
-
+              breaks = c(31,39,62,128))
