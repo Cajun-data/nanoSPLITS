@@ -1,7 +1,7 @@
 ---
 title: "nanoSPLITS C10 Pooled Cell Experiment - R Markdown File (Figure 2 and associated supplementary figures)"
 author: "James M. Fulcher"
-date: "Last updated: 11/21/2023"
+date: "Last updated: 08/08/2024"
 output:github_document:
   BiocStyle::html_document:
     toc_float: true
@@ -244,6 +244,17 @@ x_long <- x_long %>%
 
 ```{r, message = FALSE, warning = FALSE,results = 'hide'}
 
+
+df2 <- x_long %>%
+  filter(!is.na(Intensity)) %>%
+  distinct(SampleID,PROTID, Cells) %>%
+  group_by(SampleID) %>%
+  add_count(name = "n") %>%
+  ungroup() %>%
+  distinct(SampleID,Cells,n)
+
+
+
 main1 <- x_long %>%
   filter(!is.na(Intensity)) %>%
   distinct(SampleID,PROTID, Cells) %>%
@@ -256,6 +267,12 @@ main1 <- x_long %>%
   ggplot()+
   aes(x = fct_relevel(Cells, "11", "3","1"), y = mean, fill = fct_relevel(Cells, "11", "3","1"))+
   geom_bar(stat= "identity",show.legend = FALSE, alpha = 0.5, color = "black")+
+  geom_jitter(data = df2, aes(y = n, x= fct_relevel(Cells, "11", "3","1")),
+              stat = "identity", 
+              alpha = 0.7,
+              height = 0, width = 0.4, size = 3, 
+              color = "black",
+              show.legend = FALSE)+
   theme_bw(base_size = 28) +
   theme(panel.background = element_rect(fill= 'white'),
         axis.text.y=element_text(color = 'black', size = 28),
@@ -278,6 +295,9 @@ main1 <- x_long %>%
 ## Figure 2b code (proteomics)
 
 ```{r, message = FALSE, warning = FALSE,results = 'hide'}
+
+
+
 
 xmed <- x_long %>%
   filter(!is.na(Intensity)) %>%
@@ -494,6 +514,14 @@ supp5  <- RNAx4 %>%
 ## Figure 2a code (transcriptomics)
 
 ```{r, message = FALSE, warning = FALSE,results = 'hide'}
+
+df2 <- RNAx5 %>%
+  distinct(SampleID,Gene, Cells) %>%
+  group_by(SampleID) %>%
+  add_count(name = "n") %>%
+  ungroup() %>%
+  distinct(SampleID,Cells,n)
+
 main5 <- RNAx5 %>%
   distinct(SampleID,Gene, Cells) %>%
   group_by(SampleID) %>%
@@ -505,6 +533,12 @@ main5 <- RNAx5 %>%
   ggplot()+
   aes(x = fct_relevel(Cells, "11", "3","1"), y = mean, fill = fct_relevel(Cells, "11", "3","1"))+
   geom_bar(stat= "identity",show.legend = FALSE, alpha = 0.5, color = "black")+
+  geom_jitter(data = df2, aes(y = n, x= fct_relevel(Cells, "11", "3","1")),
+              stat = "identity", 
+              alpha = 0.7,
+              height = 0, width = 0.4, size = 3, 
+              color = "black",
+              show.legend = FALSE)+
   theme_bw(base_size = 28) +
   theme(panel.background = element_rect(fill= 'white'),
         axis.text.y=element_text(color = 'black', size = 28),
@@ -526,6 +560,21 @@ main5 <- RNAx5 %>%
 
 ## Figure 2b code (transcriptomics)
 ```{r,  message = FALSE, warning = FALSE,results = 'hide'}
+
+
+sourcedata2 <- RNAx5 %>%
+  filter(!is.na(TPM)) %>%
+  filter(TPM >= 1) %>%
+  group_by(Cells, Gene) %>%
+  add_count(name = "Obs") %>%
+  filter(Obs >= 2) %>%
+  mutate(CV = sd(TPM)/mean(TPM)) %>%
+  distinct(Cells, Gene,CV) 
+
+
+
+
+
 
 xmed <- RNAx5 %>%
   filter(!is.na(TPM)) %>%
@@ -882,3 +931,373 @@ main9 <- ncor2 %>%
 ```{r, echo = FALSE,  fig.width= 6, fig.height = 7, message=FALSE, warning=FALSE, results='hide'}
 main5
 ```
+
+## Figure 2a
+**Figure 2a. Total proteins quantified in 11, 3, and 1 C10 cell after nanoSPLITS**
+```{r,  echo = FALSE, fig.width= 6, fig.height = 7,  message=FALSE, warning=FALSE, results='hide'}
+main1
+```
+
+
+## Figure 2c
+**Figure 2c. Coefficients of variation from RNAseq results**
+```{r, echo = FALSE, fig.width= 6, fig.height = 7, message=FALSE, warning=FALSE, results='hide'}
+main6+
+  stat_summary(fun.data=data_summary2)
+```
+
+## Figure 2c
+**Figure 2c. Coefficients of variation for LFQ proteomics of 11, 3, and 1 C10 cells**
+```{r,echo = FALSE, fig.width= 6, fig.height = 7, message=FALSE, warning=FALSE, results='hide'}
+ main2 +
+  stat_summary(fun.data=data_summary)
+```
+
+## Figure 2d
+**Figure 2d. Distributions of the ratios of protein intensities between 11, 3, and 1 C10 cell**
+```{r,echo = FALSE, fig.width= 6, fig.height = 7, message=FALSE, warning=FALSE, results='hide'}
+main3
+```
+
+## Figure 2e (and associated code)
+**Figure 2e: Pearson Correlation heatmap of RNAseq (TPM) and proteomics (riBAQ) data**
+```{r, fig.height=8, fig.width=8, message=FALSE, warning=FALSE, dpi=300, results='hide'}
+
+corx <- combined5%>%
+  dplyr::select(-Cells) %>%
+  arrange(SampleID) %>%
+  spread(SampleID, log2riBAQ) %>%
+  ungroup() 
+
+corx2 <- corx %>% remove_rownames %>% column_to_rownames(var="Gene")
+
+corTest <- cor(corx2,method = "pearson", use = "pairwise.complete.obs") 
+
+corrplot(corTest, method = 'shade', order = 'hclust',
+         hclust.method = 'centroid',
+         col.lim = c(0, 1),
+         tl.pos = "n",
+         cel.cex = 3,
+         is.corr = TRUE, tl.srt = 45,
+         diag = FALSE, tl.col = "black") %>%
+  corrRect(c(0, 7, 13, 18), col = 'white')+
+  theme(text=element_text(family="Helvetica"))
+
+```
+
+
+
+## Figure 2b (and associated code)
+**Figure 2b. Pie chart of the localization of all genes/proteins found in the scRNAseq and scProteomic data **
+```{r , fig.align="center", fig.height=8, fig.width=8, message=FALSE, warning=FALSE, dpi=300, results='hide'}
+
+gene_check <- x_long3 %>%
+  filter(Cells  == "1") %>%
+  distinct(Gene)
+
+gene_query <-queryMany(gene_check$Gene, scopes='symbol',
+                       fields=c('go'), species='mouse',
+                       returnall = FALSE )
+gq2 <- gene_query %>%
+  as.data.frame() %>%
+  mutate(go.CC = unAsIs(go.CC)) %>%
+  mutate(go.MF = unAsIs(go.MF))
+
+gq3 <- gq2 %>%
+  dplyr::select(-go.BP, -go.MF) %>%
+  hoist(go.CC,
+        term =  "term",
+        evidence = "evidence",
+        qualifier = "qualifier",
+        id = "id") %>%
+  unnest(term, evidence, qualifier, id) %>%
+  dplyr::select(-go.CC)
+
+gq4 <- gq2 %>%
+  dplyr::select(-go.BP, -go.CC) %>%
+  hoist(go.MF,
+        term =  "term",
+        evidence = "evidence",
+        qualifier = "qualifier",
+        id = "id") %>%
+  unnest(term, evidence, qualifier, id) %>%
+  dplyr::select(-go.MF)
+
+ transcriptf <- gq4 %>%
+  filter(grepl("transcription", term)) %>%
+  distinct(query) %>%
+  mutate(Component = "Transcription")
+
+
+nuclearp <- gq3 %>%
+  filter(term == "nucleus" | term == "nucleoplasm" | term == "nucleolus"| grepl("nuclear", term)) %>%
+  filter(qualifier == "located_in") %>%
+  distinct(query)%>%
+  mutate(Component = "Nuclear")
+
+
+
+
+cytoplasmic <- gq3 %>%
+  filter(qualifier == "located_in") %>%
+  filter(term == "cytoplasm" | term == "cytosol") %>%
+  distinct(query) %>%
+  mutate(Component = "Cytoplasmic")
+
+mitochondrial <- gq3 %>%
+  filter(qualifier == "located_in") %>%
+  filter(term == "mitochondrion" | grepl("mitochondria", term)) %>%
+  distinct(query) %>%
+  mutate(Component = "Mitochondrial")
+
+plasmamembrane <- gq3 %>%
+  filter(qualifier == "located_in") %>%
+  filter(term == "plasma membrane" | term == "membrane") %>%
+  distinct(query) %>%
+  mutate(Component = "Plasma membrane")
+
+
+ER_golgi <- gq3 %>%
+  filter(qualifier == "located_in") %>%
+  filter(grepl("Golgi", term) | grepl("endoplasmic reticulum", term)) %>%
+  distinct(query) %>%
+  mutate(Component = "ER and Golgi")
+
+extraCel <- gq3 %>%
+  filter(qualifier == "located_in") %>%
+  filter(grepl("extracellular", term)) %>%
+  distinct(query) %>%
+  mutate(Component = "Extracellular")
+
+misc <- gq3 %>%
+ filter(!query %in% transcriptf$query) %>%
+  filter(!query %in% nuclearp$query) %>%
+  filter(!query %in% cytoplasmic$query) %>%
+  filter(!query %in% mitochondrial$query) %>%
+  filter(!query %in% plasmamembrane$query) %>%
+  filter(!query %in% ER_golgi$query) %>%
+  filter(!query %in% extraCel$query) %>%
+  filter(qualifier == "located_in") %>%
+  distinct(query) %>%
+  mutate(Component = "Misc")
+
+protein_component <- do.call("rbind",list(transcriptf, nuclearp,
+                                          cytoplasmic, mitochondrial,
+                                          plasmamembrane, ER_golgi,
+                                          extraCel, misc)) %>%
+  mutate(Component = as.factor(Component)) %>%
+  mutate(Component = fct_relevel(Component, "Nuclear",
+                                  "Transcription",
+                                  "Cytoplasmic",
+                                  "Plasma membrane",
+                                  "Mitochondrial",
+                                  ))
+
+
+cols <- c("#fbb4ae", "#fddaec", "#b3cde3", "#ccebc5",
+          "#decbe4", "#fed9a6", "#ffffcc", "#e5d8bd")
+
+
+
+PieChart(Component, data = protein_component,
+         values = "%",
+         fill = cols,
+         lwd = 2,
+         lty = 1,
+         values_size = 0.8,
+         values_color = "black",
+         color = "black",
+         main = NULL,
+         width = 10,
+         heigth = 10)+
+  theme(text=element_text(family="Helvetica"))
+
+
+
+
+
+
+```
+
+
+```{r,   message=FALSE, dpi=300, fig.align = "center",fig.width= 8,fig.height = 8, warning=FALSE, results='hide'}
+
+gene_check <- RNAx5 %>%
+  filter(Cells  == "1") %>%
+  distinct(Gene)
+
+gene_query <-queryMany(gene_check$Gene, scopes='symbol',
+                       fields=c('go'), species='mouse',
+                       returnall = FALSE )
+gq2 <- gene_query %>%
+  as.data.frame() %>%
+  mutate(go.CC = unAsIs(go.CC)) %>%
+  mutate(go.MF = unAsIs(go.MF))
+
+gq3 <- gq2 %>%
+  dplyr::select(-go.BP, -go.MF) %>%
+  hoist(go.CC,
+        term =  "term",
+        evidence = "evidence",
+        qualifier = "qualifier",
+        id = "id") %>%
+  unnest(term, evidence, qualifier, id) %>%
+  dplyr::select(-go.CC)
+
+gq4 <- gq2 %>%
+  dplyr::select(-go.BP, -go.CC) %>%
+  hoist(go.MF,
+        term =  "term",
+        evidence = "evidence",
+        qualifier = "qualifier",
+        id = "id") %>%
+  unnest(term, evidence, qualifier, id) %>%
+  dplyr::select(-go.MF)
+
+ transcriptf <- gq4 %>%
+  filter(grepl("transcription", term)) %>%
+  distinct(query) %>%
+  mutate(Component = "Transcription")
+
+
+nuclearp <- gq3 %>%
+  filter(term == "nucleus" | term == "nucleoplasm" | term == "nucleolus"| grepl("nuclear", term)) %>%
+  filter(qualifier == "located_in") %>%
+  distinct(query)%>%
+  mutate(Component = "Nuclear")
+
+
+
+
+cytoplasmic <- gq3 %>%
+  filter(qualifier == "located_in") %>%
+  filter(term == "cytoplasm" | term == "cytosol") %>%
+  distinct(query) %>%
+  mutate(Component = "Cytoplasmic")
+
+mitochondrial <- gq3 %>%
+  filter(qualifier == "located_in") %>%
+  filter(term == "mitochondrion" | grepl("mitochondria", term)) %>%
+  distinct(query) %>%
+  mutate(Component = "Mitochondrial")
+
+plasmamembrane <- gq3 %>%
+  filter(qualifier == "located_in") %>%
+  filter(term == "plasma membrane" | term == "membrane") %>%
+  distinct(query) %>%
+  mutate(Component = "Plasma membrane")
+
+
+ER_golgi <- gq3 %>%
+  filter(qualifier == "located_in") %>%
+  filter(grepl("Golgi", term) | grepl("endoplasmic reticulum", term)) %>%
+  distinct(query) %>%
+  mutate(Component = "ER and Golgi")
+
+extraCel <- gq3 %>%
+  filter(qualifier == "located_in") %>%
+  filter(grepl("extracellular", term)) %>%
+  distinct(query) %>%
+  mutate(Component = "Extracellular")
+
+misc <- gq3 %>%
+ filter(!query %in% transcriptf$query) %>%
+  filter(!query %in% nuclearp$query) %>%
+  filter(!query %in% cytoplasmic$query) %>%
+  filter(!query %in% mitochondrial$query) %>%
+  filter(!query %in% plasmamembrane$query) %>%
+  filter(!query %in% ER_golgi$query) %>%
+  filter(!query %in% extraCel$query) %>%
+  filter(qualifier == "located_in") %>%
+  distinct(query) %>%
+  mutate(Component = "Misc")
+
+protein_component <- do.call("rbind",list(transcriptf, nuclearp,
+                                          cytoplasmic, mitochondrial,
+                                          plasmamembrane, ER_golgi,
+                                          extraCel, misc)) %>%
+  mutate(Component = as.factor(Component)) %>%
+  mutate(Component = fct_relevel(Component, "Nuclear",
+                                  "Transcription",
+                                  "Cytoplasmic",
+                                  "Plasma membrane",
+                                  "Mitochondrial",
+                                  ))
+
+
+cols <- c("#fbb4ae", "#fddaec", "#b3cde3", "#ccebc5",
+          "#decbe4", "#fed9a6", "#ffffcc", "#e5d8bd")
+
+PieChart(Component, data = protein_component,
+         values = "%",
+         fill = cols,
+         lwd = 2,
+         lty = 1,
+         values_size = 0.8,
+         values_color = "black",
+         color = "black",
+         main = NULL,
+         width = 10,
+         heigth = 10)+
+  theme(text=element_text(family="Helvetica"))
+
+
+
+```
+
+# Supplementary Figures
+
+
+## Supplementary Figure X
+**Supplementary Figure: 11, 3, and 1 C10 cell protein LFQ intensity distributions before median normalization**
+```{r,echo = FALSE,message=FALSE, warning=FALSE, results='hide'}
+supp1
+```
+
+
+## Supplementary Figure X
+**Supplementary Figure: 11, 3, and 1 C10 cell protein LFQ intensity distributions after median normalization**
+```{r,echo = FALSE,message=FALSE, warning=FALSE, results='hide'}
+supp2
+```
+
+
+## Supplementary Figure X
+**Supplementary Figure: Total number of proteins observed per dataset**
+```{r,echo = FALSE,message=FALSE, warning=FALSE, results='hide'}
+supp3
+```
+
+
+## Supplementary Figure X
+**Supplementary Figure. Total genes detected with at least 5 raw counts in 11, 3, and 1 C10 cell after nanoSPLITS (transcriptomics)**
+```{r,echo = FALSE,message=FALSE, warning=FALSE, results='hide'}
+supp5
+```
+
+
+## Supplementary Figure X
+**Supplementary Figure: Intensity distributions for 11, 3, and 1 C10 cell samples**
+```{r,echo = FALSE,message=FALSE, warning=FALSE, results='hide'}
+supp4
+```
+
+
+## Supplementary Figure X
+**Supplementary Figure: Rank of proteins (riBAQ) based on median abundance across all samples**
+```{r,echo = FALSE,message=FALSE, warning=FALSE, fig.width= 8, fig.height = 6, results='hide'}
+supp6
+```
+
+## Supplementary Figure X
+**Supplementary Figure: Distributions of Pearson Correlation coefficients**
+```{r,echo = FALSE,message=FALSE, warning=FALSE, fig.width= 8, fig.height = 6, results='hide'}
+main8
+```
+
+## Supplementary Figure X
+**Supplementary Figure: Distribution of overlapping identifications (Gene/ Protein)**
+```{r,echo = FALSE,message=FALSE, warning=FALSE, fig.width= 8, fig.height = 6, results='hide'}
+main9
+```
+
