@@ -1,7 +1,7 @@
 ---
 title: "nanoSPLITS C10/SVEC Single Cell Experiment - R Markdown File (Figure 3 and associated supplementary figures)"
 author: "James M. Fulcher"
-date: "Last updated: 11/21/2023"
+date: "Last updated: 08/08/2024"
 output:github_document:
   BiocStyle::html_document:
     toc_float: true
@@ -673,4 +673,325 @@ corrplot(corTest, method = 'shade', order = 'hclust',
   theme(text=element_text(family="Helvetica"))
 
 
+```
+
+
+
+
+## Figure 3d. WNN UMAP with H2-K1 protein/gene expression for C10 and SVEC cells
+```{r, echo = FALSE, message=FALSE, warning=FALSE, dpi=300, fig.width= 10, fig.height = 6, results='hide'}
+p1+p2+p3
+
+```
+
+
+
+
+
+**Supplementary Figure 5a: Distributions of Pearson Correlation coefficients**
+```{r, message=FALSE, warning=FALSE, dpi=300, fig.width= 8, fig.height = 5, results='hide'}
+corTest[lower.tri(corTest)] <- NA
+
+corTest2 <- corTest %>%
+  melt()
+
+corTest2 %>%
+  filter(value != 1) %>%
+  filter(!is.na(value)) %>%
+  mutate(Var1 = paste(Var1, "_", sep =  "")) %>%
+  mutate(Var2 = paste(Var2, "_", sep = "")) %>%
+  mutate(Type1 = case_when(grepl("05J", Var1) ~ "C10",
+                           grepl("07J", Var1) ~ "SVEC")) %>%
+  mutate(Type2 = case_when(grepl("05J", Var2) ~ "C10",
+                           grepl("07J", Var2) ~ "SVEC")) %>%
+  mutate(Var1 = case_when(Type1 == "C10" ~ paste("__", Var1, sep =  ""),
+                          TRUE ~ Var1)) %>%
+  mutate(Var2 = case_when(Type2 == "C10" ~ paste("__", Var2, sep =  ""),
+                          TRUE ~ Var2)) %>%
+  mutate(Comparison = case_when(Type1 == Type2 & grepl("_RNA", Var1) & grepl("_RNA", Var2) ~ "scRNAseq",
+                                Type1 == Type2 & !grepl("_RNA", Var1) & !grepl("_RNA", Var2)~ "scProteomics",
+                                Type1 == Type2 & !grepl("_RNA", Var1) & grepl("_RNA", Var2) ~ "scProteomics vs scRNAseq",
+                                Type1 == Type2 & grepl("_RNA", Var1) & !grepl("_RNA", Var2) ~ "scProteomics vs scRNAseq",
+                                TRUE ~ "discard")) %>%
+    mutate(Comparison = case_when(Type1 == Type2 & Comparison == "scProteomics vs scRNAseq" & substring(Var1, 10,12) == substring(Var2, 10,12) ~ "Intracell",
+                                Type1 == Type2 & Comparison == "scProteomics vs scRNAseq" & substring(Var1, 10,12) != substring(Var2, 10,12) ~ "Intercell",
+                                TRUE ~ Comparison)) %>%
+  filter(Comparison  != "discard") %>%
+  ggplot()+
+  aes(x = fct_relevel(Comparison, "scProteomics",
+                      "scRNAseq",
+                      "scProteomics vs scRNAseq"),
+      y = value, fill = Type1)+
+  geom_boxplot(alpha = 0.5, show.legend = FALSE, size = 1)+
+  theme_bw(base_size = 28) +
+  theme(panel.background = element_rect(fill= 'white'),
+        axis.text.y=element_text(color = 'black', size = 28),
+        axis.text.x=element_text(angle = 0, vjust = 0.5, hjust= 0.5, color='black',size = 28),
+        panel.grid.minor = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.border = element_blank(),
+        axis.line = element_line(),
+        text=element_text(family="Helvetica")) +
+  ylab("") +
+  xlab("")+
+  scale_x_discrete(labels=function(x){sub("\\s", "\n", x)})+
+  scale_fill_manual( values = c("#00D65C", "#82B7FF"))+
+  scale_y_continuous(limits = c(0,1))
+ # ggsave("Pearson_Corr.png", width = 12, height = 6)
+
+
+```
+
+**Supplementary Figure 5b: Distributions of Pearson Correlation coefficients**
+```{r, message=FALSE, warning=FALSE, dpi=300, fig.width= 8, fig.height = 5, results='hide'}
+
+corx <- combined4 %>%
+  arrange(SampleID) %>%
+  spread(SampleID, logriBAQ) %>%
+  ungroup() 
+
+corx <- corx %>%
+  remove_rownames() %>%
+  column_to_rownames("Gene")
+
+combined_cor <- Hmisc::rcorr(as.matrix(corx))
+
+ncor <- as.matrix(combined_cor$n)
+
+
+ncor[lower.tri(ncor)] <- NA
+
+ncor2 <- ncor %>%
+  melt()
+
+ncor2 %>%
+    filter(!is.na(value)) %>%
+  filter(Var1 != Var2) %>%
+mutate(Var1 = paste(Var1, "_", sep =  "")) %>%
+  mutate(Var2 = paste(Var2, "_", sep = "")) %>%
+  mutate(Type1 = case_when(grepl("05J", Var1) ~ "C10",
+                           grepl("07J", Var1) ~ "SVEC")) %>%
+  mutate(Type2 = case_when(grepl("05J", Var2) ~ "C10",
+                           grepl("07J", Var2) ~ "SVEC")) %>%
+  mutate(Var1 = case_when(Type1 == "C10" ~ paste("__", Var1, sep =  ""),
+                          TRUE ~ Var1)) %>%
+  mutate(Var2 = case_when(Type2 == "C10" ~ paste("__", Var2, sep =  ""),
+                          TRUE ~ Var2)) %>%
+  mutate(Comparison = case_when(Type1 == Type2 & grepl("_RNA", Var1) & grepl("_RNA", Var2) ~ "scRNAseq",
+                                Type1 == Type2 & !grepl("_RNA", Var1) & !grepl("_RNA", Var2)~ "scProteomics",
+                                Type1 == Type2 & !grepl("_RNA", Var1) & grepl("_RNA", Var2) ~ "scProteomics vs scRNAseq",
+                                Type1 == Type2 & grepl("_RNA", Var1) & !grepl("_RNA", Var2) ~ "scProteomics vs scRNAseq",
+                                TRUE ~ "discard")) %>%
+    mutate(Comparison = case_when(Type1 == Type2 & Comparison == "scProteomics vs scRNAseq" & substring(Var1, 10,12) == substring(Var2, 10,12) ~ "Intracell",
+                                Type1 == Type2 & Comparison == "scProteomics vs scRNAseq" & substring(Var1, 10,12) != substring(Var2, 10,12) ~ "Intercell",
+                                TRUE ~ Comparison)) %>%
+  filter(Comparison  != "discard") %>%
+  ggplot()+
+  aes(x = fct_relevel(Comparison,"scRNAseq", "scProteomics",
+                      "Proteomics vs RNAseq"),
+      y = value, fill = Type1)+
+  geom_boxplot(alpha = 0.5, show.legend = TRUE, size = 1)+
+  theme_bw(base_size = 28) +
+  theme(panel.background = element_rect(fill= 'white'),
+        axis.text.y=element_text(color = 'black', size = 28),
+        axis.text.x=element_text(angle = 0, vjust = 0.5, hjust= 0.5, color='black',size = 28),
+        panel.grid.minor = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.border = element_blank(),
+        axis.line = element_line(),
+        text=element_text(family="Helvetica")) +
+  ylab("") +
+  xlab("")+
+  scale_x_discrete(labels=function(x){sub("\\s", "\n", x)})+
+  scale_fill_manual(name = "Cell Type", values = c("#00D65C", "#82B7FF"))
+    #ggsave("overlap.png", width = 12, height = 6)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Supplementary Figure S7a
+
+```{r, echo = FALSE, message=FALSE, warning=FALSE, dpi=300, fig.width= 8, fig.height = 6, results='hide'}
+
+DefaultAssay(C10SVEC) <- 'Prot'
+
+PCA2 <- GetAssayData(object = C10SVEC, assay = "Prot", slot = "scale.data")
+PCA21  <- pca(PCA2)
+PCA21$metadata <- C10SVEC[["celltype"]]
+biplot(PCA21,x = "PC1", y = "PC2", showLoadings = FALSE,colby = "celltype",
+       labSize = 5, pointSize = 5, sizeLoadingsNames = 5,
+       ntopLoadings = 4,
+       lab =  NULL,
+       legendPosition = "right")+
+  ggtitle("PCA, scProteomics")+
+  theme(panel.background = element_rect(fill= 'white'),
+        text=element_text(family="Helvetica"))
+
+
+
+```
+
+## Supplementary Figure S7b
+
+```{r, echo = FALSE, message=FALSE, warning=FALSE, dpi=300, fig.width= 8, fig.height = 6, results='hide'}
+
+
+
+DefaultAssay(C10SVEC) <- 'RNA'
+
+PCA1 <- GetAssayData(object = C10SVEC, assay = "RNA", slot = "scale.data")
+PCA11  <- pca(PCA1)
+PCA11$metadata <- C10SVEC[["celltype"]]
+biplot(PCA11, x = "PC1", y = "PC2", showLoadings = FALSE,colby = "celltype",
+       labSize = 5, pointSize = 5, sizeLoadingsNames = 5,
+              ntopLoadings = 4,
+       lab = NULL,
+       legendPosition = "right")+
+  ggtitle("PCA, scRNAseq")+
+  theme(panel.background = element_rect(fill= 'white'),
+        text=element_text(family="Helvetica"))
+
+
+```
+
+
+
+
+
+
+## Figure 3e code
+```{r, message = FALSE, warning = FALSE,results = 'hide'}
+
+C10SVEC.rna <- read.csv(file = "C10SVEC_singlecells_norm_counts.csv", sep = ",",
+                               header = TRUE, row.names = 1, check.names = FALSE) %>%
+  dplyr::select( starts_with("05J")) %>%
+  as.sparse()
+
+names <- C10SVEC.rna@Dimnames[[2]]
+
+
+C10SVEC.prot <- read.csv(file = "C10_singlecells_protein_impute.csv", sep = ",",
+                         header = TRUE, row.names = 1, check.names = FALSE) %>%
+  as.sparse()
+
+
+names2 <- C10SVEC.prot@Dimnames[[2]]
+
+C10SVEC_sub.rna <- read.csv(file = "C10SVEC_singlecells_norm_counts.csv", sep = ",",
+                        header = TRUE, row.names = 1, check.names = FALSE) %>%
+  dplyr::select( starts_with("05J")) %>%
+             dplyr::select(one_of(names2))
+
+names(C10SVEC_sub.rna) <- gsub(x = names(C10SVEC_sub.rna),
+                               pattern = "05J_C10_", replacement = "")
+C10SVEC_sub.rna <- as.sparse(C10SVEC_sub.rna)
+
+check <- colnames(C10SVEC_sub.rna)
+
+
+  
+C10SVEC_sub.prot <- read.csv(file = "C10_singlecells_protein_impute.csv", sep = ",",
+                           header = TRUE, row.names = 1, check.names = FALSE) %>%
+  dplyr::select( starts_with("05J")) %>%
+  dplyr::select(one_of(names))
+
+names(C10SVEC_sub.prot) <- gsub(x = names(C10SVEC_sub.prot),
+                               pattern = "05J_C10_", replacement = "")
+
+C10SVEC_sub.prot <- C10SVEC_sub.prot[ , check] %>%
+  as.sparse()
+
+# creates a Seurat object based on the scRNA-seq data
+C10SVEC <- CreateSeuratObject(counts = C10SVEC_sub.rna)
+
+# We can see that by default, the cbmc object contains an assay storing RNA measurement
+Assays(C10SVEC)
+
+# create a new assay to store ADT information
+prot_assay <- CreateAssayObject(counts = C10SVEC_sub.prot)
+
+# add this assay to the previously created Seurat object
+C10SVEC[["Prot"]] <- prot_assay
+
+# Validate that the object now contains multiple assays
+Assays(C10SVEC)
+
+rownames(C10SVEC[["Prot"]])
+
+# List the current default assay
+DefaultAssay(C10SVEC)
+DefaultAssay(C10SVEC) <- 'RNA'
+
+
+C10SVEC <- NormalizeData(C10SVEC)  
+C10SVEC <- FindVariableFeatures(C10SVEC,
+                                nfeatures = 3000)
+C10SVEC <- ScaleData(C10SVEC)
+C10SVEC <- RunPCA(C10SVEC, verbose = FALSE,
+                  npcs = 25)
+C10SVEC <- FindNeighbors(C10SVEC, dims = 1:2)
+C10SVEC <- FindClusters(C10SVEC, resolution = 1,verbose = FALSE)
+C10SVEC <- RunUMAP(C10SVEC, dims = 1:2,
+                   n.neighbors = 25)
+
+
+C10SVEC <- CellCycleScoring(C10SVEC, s.features = s.genes, g2m.features = g2m.genes,
+                            set.ident = TRUE)
+
+C10SVEC <- RunPCA(C10SVEC, features = c(s.genes, g2m.genes),
+                  npcs = 25)
+
+
+p4 <- DimPlot(C10SVEC, label = FALSE,
+        pt.size = 6) +  scale_x_continuous(limits = c(-5, 3))+
+  scale_y_continuous(limits = c(-2.5,3))
+
+p5 <- FeaturePlot(C10SVEC,label = FALSE, features = c("Cdk1"),
+                  reduction = 'umap', max.cutoff = 100, 
+                  #cols = c("#ffdb00","#ffa904", "#ee7b06", "#a12424", "#400b0b"),
+                  cols = c("lightgrey", "purple"),
+                  ncol = 1,
+                  repel = TRUE,
+                  order = TRUE,
+                  slot = "scale.data",
+                  pt.size = 6)+
+  scale_x_continuous(limits = c(-5, 3))+
+  scale_y_continuous(limits = c(-2.5,3))
+
+DefaultAssay(C10SVEC) <- 'Prot'
+C10SVEC <- FindVariableFeatures(C10SVEC)
+C10SVEC <-  ScaleData(C10SVEC) %>% RunPCA(reduction.name = 'apca',
+                                          npcs = 25)
+
+
+p6 <- FeaturePlot(C10SVEC,label = FALSE, features = c("prot_Cdk1"),
+            reduction = 'umap', max.cutoff = 100, 
+            #cols = c("#ffdb00","#ffa904", "#ee7b06", "#a12424", "#400b0b"),
+            cols = c("lightgrey", "red"),
+            ncol = 1,
+            repel = TRUE,
+            order = TRUE,
+            slot = "scale.data",
+            pt.size = 6)+
+  scale_x_continuous(limits = c(-5, 3))+
+  scale_y_continuous(limits = c(-2.5,3))
+
+
+```
+
+
+## Figure 3e. Cell cycle UMAP with Cdk1 protein/gene expression for C10 cells
+```{r, echo = FALSE, message=FALSE, warning=FALSE, dpi=300, fig.width= 10, fig.height = 6, results='hide'}
+p4+p5+p6
 ```
