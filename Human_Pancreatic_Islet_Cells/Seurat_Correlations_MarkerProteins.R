@@ -2,32 +2,83 @@ library(tidyverse)
 library(Seurat)
 library(Azimuth)
 library(SeuratData)
+library(limma)
+################## Functions
 
-
-
-impute_normal <- function(object, width=0.3, downshift=1.8, seed=100) {
+MyFindAllMarkers <- function(
+    object,
+    assay = "Prot",
+    slot = "data",
+    logfc.threshold = 0,
+    verbose = TRUE,
+    ...
+) {
+  # Ensure the assay is available in the Seurat object
+  DefaultAssay(object) <- assay
   
-  if (!is.matrix(object)) object <- as.matrix(object)
-  mx <- max(object, na.rm=TRUE)
-  mn <- min(object, na.rm=TRUE)
-  if (mx - mn > 20) warning("Please make sure the values are log-transformed")
+  # Extract data from the specified slot
+  data <- GetAssayData(object, slot = slot)
+  # check1 <- rowSums(is.na(data))
+  # check1 <- check1[check1 < ncol(data)*min_obs]
+  # data <- data[names(check1),]
+  # Cluster information
+  clusters <- Idents(object)
   
-  set.seed(seed)
-  object <- apply(object, 2, function(temp) {
-    temp[!is.finite(temp)] <- NA
-    temp_sd <- stats::sd(temp, na.rm=TRUE)
-    temp_mean <- mean(temp, na.rm=TRUE)
-    shrinked_sd <- width * temp_sd   # shrink sd width
-    downshifted_mean <- temp_mean - downshift * temp_sd   # shift mean of imputed values
-    n_missing <- sum(is.na(temp))
-    temp[is.na(temp)] <- stats::rnorm(n_missing, mean=downshifted_mean, sd=shrinked_sd)
-    temp
-  })
-  return(object)
+  # Initialize a data frame to store marker information
+  all_markers <- data.frame()
+  
+  # Loop through each cluster and find markers
+  for (cluster in levels(clusters)) {
+    if (verbose) {
+      message("Processing cluster: ", cluster)
+    }
+    
+    # Cells in the current cluster
+    cluster_cells <- WhichCells(object, idents = cluster)
+    
+    # Cells in other clusters
+    other_cells <- setdiff(Cells(object), cluster_cells)
+    
+    # Create design matrix for limma
+    design <- model.matrix(~ factor(c(rep(1, length(cluster_cells)), rep(0, length(other_cells)))))
+    colnames(design) <- c("Other", "Cluster")
+    
+    # Combine expressions into a matrix
+    expr_data <- cbind(data[, cluster_cells], data[, other_cells])
+    
+    cntrsts <- "Cluster-Other"
+    
+    # Fit linear model using limma
+    fit <- lmFit(expr_data, design)
+    made_contrasts <- makeContrasts(contrasts = cntrsts, levels = design)
+    contrast_fit <- contrasts.fit(fit, made_contrasts)
+    fit <- eBayes(fit)
+    
+    # Extract results
+    results <- topTable(fit, coef = "Cluster", number = Inf, adjust.method = "BH")
+    results <- results[!is.na(results$t), ]
+    # Calculate log2 fold-change
+    log2FC <- results$logFC
+    
+    # Create a data frame of results
+    markers_df <- data.frame(
+      gene = rownames(results),
+      cluster = cluster,
+      log2FC = log2FC,
+      p_value = results$P.Value,
+      p_value_adj = results$adj.P.Val
+    )
+    
+    # Filter based on logfc.threshold and min.pct
+    markers_df <- markers_df %>%
+      filter(log2FC > logfc.threshold)
+    
+    # Append to the all_markers data frame
+    all_markers <- rbind(all_markers, markers_df)
+  }
+  
+  return(all_markers)
 }
-
-
-
 #####################################
 pancREF <- readRDS(file = "ref.Rds")
 
@@ -83,10 +134,6 @@ annotations_csv <-  annotations_csv %>%
   ungroup()
 
 #write.csv(annotations_csv, file = "annotations.csv")
-
-
-
-
 
 ########## Combine with proteomics
 ### start with panc_pept_batch object from "Panc_Islet_Cells_Workflow.R"
@@ -191,7 +238,17 @@ FeaturePlot(isletData3, label = F,
 
 
 #########################
-#########################
+
+
+#png(filename = "Azimuth_transfer_pancislets.png", width = 12.7,
+#    height = 4, units = "in",
+#    res = 300)
+p3+p1
+#dev.off()
+
+###########################
+############################
+
 
 TPM1 <- read.delim("scRNAseq_Donor1_TPM.tsv", row.names = 1,
                    check.names = F) %>%
@@ -209,9 +266,9 @@ TPM2 <- read.delim("scRNAseq_Donor2_TPM.tsv", row.names = 1,
   dplyr::select(ends_with(colnames(isletData3))) %>%
   log2() %>%
   rownames_to_column(var = "Gene") %>%
-pivot_longer(-Gene,
-             names_to = "SampleID",
-             values_to = "TPM") %>%
+  pivot_longer(-Gene,
+               names_to = "SampleID",
+               values_to = "TPM") %>%
   filter(TPM != -Inf) %>%
   inner_join(., annot) %>%
   dplyr::select(Gene, SampleID, Celltype, TPM)
@@ -305,9 +362,6 @@ combined_pearson %>%
 wilcox.test(corr_pr$estimate, corr_pr2$estimate, alternative = "two.sided")
 
 
-###########################
-############################
-
 
 
 ########## Combine with proteomics
@@ -317,8 +371,6 @@ wilcox.test(corr_pr$estimate, corr_pr2$estimate, alternative = "two.sided")
 annot <- read.csv("LDA_Celltypes.csv",
                   check.names = T) %>%
   arrange(SampleID)
-
-
 
 combined <- panc_pept_batch$`corrected data` %>%
   as.data.frame()  %>%
@@ -341,8 +393,8 @@ combined <- panc_pept_batch$`corrected data` %>%
 
 combined <- combined[,order(colnames(x = combined))]
 
+
 combined3 <- combined %>%
-  impute_normal(width=0.3, downshift=3) %>% ###Need imputation...
   as.sparse()
 
 
@@ -354,7 +406,25 @@ isletProt <- RenameAssays(
   verbose = TRUE
 )
 
-isletProt <-  ScaleData(isletProt)
+isletProt <-  SetAssayData(isletProt,
+                         layer = "data",
+                         isletProt@assays$Prot$counts)
+
+
+Seurat_scale <- combined %>%
+  t() %>%
+  scale() %>%
+  t() %>%
+  as.data.frame() %>%
+  rownames_to_column(var = "Protein") %>%
+  mutate(Protein = gsub("_","-", Protein)) %>%
+  column_to_rownames(var ="Protein") %>%
+  as.sparse()
+
+isletProt <-  SetAssayData(isletProt,
+                         layer = "scale.data",
+                         Seurat_scale)
+
 
 
 isletProt <- AddMetaData(
@@ -365,71 +435,89 @@ isletProt <- AddMetaData(
 
 Idents(object = isletProt, cells = 1:126) <- annot$Celltype
 
-Prot.markers <- FindAllMarkers(isletProt, assay = "Prot", only.pos = TRUE,
-                                  test.use = "wilcox",
-                               slot = "scale.data")
+Prot.markers <- MyFindAllMarkers(isletProt, assay = "Prot", 
+                                 slot = "data")
 
-top7_immune <- Prot.markers %>%  filter(cluster == "immune") %>%
-  group_by(cluster) %>% top_n(n = 7, wt = avg_diff) %>%
-  mutate(cluster = as.character(cluster)) %>%
-  arrange(order(cluster),
-          -avg_diff)
-top6 <- Prot.markers %>% group_by(cluster) %>% 
-  filter(cluster != "immune") %>%
-  top_n(n = 6, wt = avg_diff) %>%
-  ungroup() %>%
-  filter(p_val_adj <= 0.001 | p_val_adj == 1) %>%
-  mutate(cluster = as.character(cluster)) %>%
-  filter(cluster != "unclassified") %>%
-  arrange(order(cluster),
-          -avg_diff)
-
-extra <- Prot.markers  %>%
-  filter(gene == "ERO1B" | gene == "TMEM176B")
-
-top_all <- rbind(top6, top7_immune, extra)
-top_all <- top_all[order(top_all$cluster,-top_all$avg_diff),]
-
+top_all <- c("GCG",
+             "ALDH1A1",
+             "GLS",
+             "ELAPOR1",
+             "ERP29",
+             "SLC7A2",
+             "INS",
+             "HADH",
+             "STX1A",
+             "ERO1B",
+             "GNAS",
+             "SST",
+             "RBP4",
+             "PCSK1",
+             "PCP4",
+             "GRB2",
+             "F13A1",
+             "LSP1",
+             "ACP5",
+             "HLA-DRB3",
+             "ALOX5AP"
+             )
 
 my_levels <- c("alpha", "beta", "delta", "gamma", "immune", "unclassified",
                "ductal", "endothelial", "acinar", "activated-stellate"
-               )
+)
 
 # Re-level object@ident
 isletProt@active.ident <- factor(x = isletProt@active.ident, levels = my_levels)
 
 
 library(viridis)
-heat1 <- DoHeatmap(isletProt, assay  ="Prot", features = top_all$gene, slot = "scale.data",
+heat1 <- DoHeatmap(isletProt, assay  ="Prot", features = top_all, slot = "scale.data",
                    group.bar.height = 0.05,
-                   draw.lines = TRUE,
+                   draw.lines = T,
                    size = 4,
                    angle = 90,
-                 #  hjust = 0.5,
-                 #  vjust = 2,
-                   label = F,
+                   #  hjust = 0.5,
+                   #  vjust = 2,
+                   label = T,
                    lines.width = 1
-) + scale_fill_viridis(na.value = "white") + NoLegend()
+) + scale_fill_viridis(na.value = "black") + NoLegend()
 
 
-heat1
-
-
-
-
-
-#png(filename = "Azimuth_transfer_pancislets.png", width = 12.7,
-#    height = 4, units = "in",
-#    res = 300)
-p3+p1
-#dev.off()
-
-
-#png(filename = "Protein_marker_Pancislets.png", width = 12.7,
-#    height = 4, units = "in",
-#    res = 300)
+#png(filename = "Protein_marker_Pancislets_updated.png", width = 12.7,
+ #  height = 4, units = "in",
+#   res = 300)
 heat1
 #dev.off()
 
 
+
+x_long<- combined %>% as.data.frame() %>%
+  rownames_to_column(var = "Gene") %>%
+  pivot_longer(-Gene, names_to = "SampleID", values_to = "Intensity") %>%
+  full_join(.,annot)
+
+
+##############Identify markers based on missingvalues using hypergeometric test
+
+markers_Missingvalue <- x_long %>%
+  filter(!is.na(Intensity)) %>%
+  group_by(Celltype, Gene) %>%
+  add_tally(name = "GroupSize") %>%
+  group_by(Celltype) %>%
+  mutate(GroupSize = max(GroupSize)) %>%
+  group_by(Gene) %>%
+  add_count(name = "TotalN") %>%
+  group_by(Celltype, Gene) %>%
+  add_count(name = "GroupN") %>%
+  filter(GroupSize == GroupN) %>%
+  mutate(Check1 = TotalN - GroupSize) %>%
+  ungroup() %>%
+  mutate(Prob0 = (factorial(nrow(annot)-GroupSize))/(factorial(Check1)*factorial((nrow(annot)-GroupSize)-Check1))) %>%
+  mutate(Prob1 = (factorial(nrow(annot)))/(factorial(TotalN)*factorial(nrow(annot)-TotalN))) %>%
+  mutate(p_value = Prob0/Prob1) %>%
+  mutate(Enrichment = GroupN/((GroupSize*TotalN)/nrow(annot))) %>%
+  group_by(Celltype, Gene, p_value, Enrichment) %>%
+  summarize(Avg = mean(Intensity))  %>%
+  ungroup() %>%
+  mutate(adj_p_value = p.adjust(p_value, method = "fdr")) %>%
+  filter(p_value < 0.01) 
 
