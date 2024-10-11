@@ -385,30 +385,26 @@ supp4 <- x_long %>%
 ```
 
 
-## Figure 2c code
+## Figure 2d code
 ```{r, message = FALSE, warning = FALSE,results = 'hide'}
 
-comp <- x_long%>%
+x_long2 <- x_long%>%
   filter(!is.na(Intensity)) %>%
   group_by(Cells, PROTID) %>%
   add_count(name = "Obs") %>%
   filter(Obs >= 2) %>%
-  mutate(CV = sd(Intensity)/mean(Intensity)) %>%
-  filter(CV <= 0.3) %>%
-  dplyr::select(-Obs,-CV) %>%
-  ungroup() %>%
-  inner_join(x_long,by = c("PROTID"="PROTID")) %>% 
- filter(SampleID.x >= SampleID.y) %>%  ### removes duplicate comparisons
-  mutate(div = ifelse(grepl("3cells", SampleID.x) & grepl("1cell_",SampleID.y), Intensity.x/Intensity.y,
-                      Intensity.y/Intensity.x)) %>%
+  summarize(MeanInt = mean(Intensity)) %>%
+    ungroup() 
+
+comp <- x_long2%>%
+  inner_join(x_long2,by = c("PROTID"="PROTID")) %>%
+ filter(Cells.x >= Cells.y) %>%  ### removes duplicate comparisons
+  mutate(div = ifelse(Cells.x == "3" & Cells.y == "11", MeanInt.y/MeanInt.x,
+                      MeanInt.x/MeanInt.y)) %>%
   filter(div != 1)
 
 main3 <- comp %>%
   mutate(CompVar = paste(Cells.x, Cells.y, sep = " vs ")) %>%
-  group_by(CompVar) %>%
-  filter(CompVar == "1 vs 11" | CompVar == "3 vs 11" | CompVar == "3 vs 1") %>%
-  mutate(CompVar = case_when(CompVar == "1 vs 11" ~ "11 vs 1",
-                             TRUE ~ CompVar)) %>%
   ggplot()+
   aes(x = fct_reorder(CompVar, div), y = div, fill = fct_reorder(CompVar, div))+
   geom_boxplot(alpha = 0.5, show.legend = FALSE,
@@ -428,7 +424,6 @@ main3 <- comp %>%
   xlab("")+
   scale_y_continuous(limits = c(0,20), expand = c(0,0))+
   scale_x_discrete(expand = c(0,0.5))
-
 ```
 
 
